@@ -3,6 +3,7 @@ import java.util.Scanner;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.logging.FileHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +14,7 @@ public class DC_Project2 {
   static HashMap<Integer, String> uids2hosts = new HashMap<Integer, String>();
   static Logger logger = LoggerFactory.getLogger(DC_Project2.class);
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
         logger.info("Hello World");
         if(args.length>=2 && args[1].equalsIgnoreCase("test")){
           test = true;

@@ -14,11 +14,9 @@ class Node{
     String hostname;
     HashMap<Integer, Double> neighbors2weights = new HashMap<Integer, Double>();
     int round;
-    int leader;
     boolean server = false;
     
     public Node(int u, String hn, int p, boolean test) {
-        leader = u;
         uid = u;
         if(test)  hostname = "localhost";
         else      hostname = hn;
@@ -98,8 +96,5 @@ class Node{
         return sb.toString();
     }
     
-    public boolean isLeader(){
-      return uid==leader;
-    }
    
 }
