@@ -20,13 +20,10 @@ class Node{
     public Node(int u, String hn, int p, boolean test) {
         leader = u;
         uid = u;
-        System.out.println("Node " + uid + " started");
-        if(test){
-          hostname = "localhost";
-        }
-        else
-          hostname = hn;
+        if(test)  hostname = "localhost";
+        else      hostname = hn;
         port = p;
+        System.out.println("Node " + uid + " started");
         startServer();
     }
     

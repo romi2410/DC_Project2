@@ -1,17 +1,20 @@
 package dc_project2;
 import java.util.Scanner;
-import java.util.ArrayList;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DC_Project2 {
   
   static boolean test = false;
   static HashMap<Integer, Integer> uids2ports = new HashMap<Integer, Integer>();
   static HashMap<Integer, String> uids2hosts = new HashMap<Integer, String>();
+  static Logger logger = LoggerFactory.getLogger(DC_Project2.class);
 
   public static void main(String[] args) {
+        logger.info("Hello World");
         if(args.length>=2 && args[1].equalsIgnoreCase("test")){
           test = true;
           System.out.println("Running in test (host will be localhost)");
