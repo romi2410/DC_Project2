@@ -3,7 +3,6 @@ import java.util.Scanner;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.logging.FileHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,18 +64,30 @@ public class DC_Project2 {
               started.add(n.uid);
         }
         // Create edges
+        int numEdges = 0;
         while(sc.hasNext()){
           String line = sc.nextLine();
           if(!(line.startsWith("#") || line.trim().length()==0)){
             String[] params = line.trim().split("\\s+");
             double w = Double.parseDouble(params[1]);
             String[] tuple = params[0].substring(1, params[0].length()-1).split(",");
-            int n1 = Integer.parseInt(tuple[0]);
-            int n2 = Integer.parseInt(tuple[1]);
-            nodes.get(n1).connectTo(nodes.get(n2).hostname, nodes.get(n2).port, nodes.get(n2).uid, w);
-            nodes.get(n2).connectTo(nodes.get(n1).hostname, nodes.get(n1).port, nodes.get(n2).uid, w);
+            Node node1 = nodes.get(Integer.parseInt(tuple[0]));
+            Node node2 = nodes.get(Integer.parseInt(tuple[1]));
+            node1.connectTo(node2.hostname, node2.port, node2.uid, w);
+            node2.connectTo(node1.hostname, node1.port, node1.uid, w);
+            numEdges += 2;
           }
         }
+        // Check all edges created
+        int edgeCnt = 0;
+        while(edgeCnt < numEdges){
+          edgeCnt = 0;
+          for(Node node: nodes.values())
+            edgeCnt += node.numEdges;
+        }
+        // Initiate GHS
+        for(Node node: nodes.values())
+          node.initGHS();
         return nodes;
     }
     public static Node parseLine_Node(String[] nodeParams){

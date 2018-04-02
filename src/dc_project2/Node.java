@@ -9,12 +9,23 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 
 class Node{
+    // node stuff
     int uid;
     int port;
     String hostname;
+    
+    // neighbor stuff
     HashMap<Integer, Double> neighbors2weights = new HashMap<Integer, Double>();
+    HashMap<Integer, BufferedWriter> neighbors2socket = new HashMap<Integer, BufferedWriter>();
+    
+    // algo stuff
+    GHS ghs;
     int round;
+    
+    // used by DC_Project2 for verification before initiating GHS
     boolean server = false;
+    int numEdges = 0;
+    
     
     public Node(int u, String hn, int p, boolean test) {
         uid = u;
@@ -25,40 +36,44 @@ class Node{
         startServer();
     }
     
+    private void sendTo(int rcvrUid){
+      BufferedWriter out = neighbors2socket.get(rcvrUid);
+      // SENDER LOGIC GOES HERE
+      try{
+        out.newLine();
+        out.flush();
+        Thread.sleep(200);
+      } catch (IOException e) {
+        e.printStackTrace();
+      } catch (InterruptedException e){
+        e.printStackTrace();
+      }
+    }
+    
+    public void initGHS(){
+      ghs = new GHS(neighbors2weights, this);
+    }
+    
     public void connectTo(String hostname, int port, int u, double w){
-      startSender(port, hostname, u);
+      neighbors2socket.put(u, startSender(port, hostname, u));
       neighbors2weights.put(u, w);
+      numEdges++;
+    }
+    
+    private BufferedWriter startSender(int port, String hostname, int neighborUID) {
+      while(true) try {
+          Socket s = new Socket(hostname, port);
+          BufferedWriter out = new BufferedWriter(
+                  new OutputStreamWriter(s.getOutputStream()));
+          return out;
+      } catch (UnknownHostException e) {
+          e.printStackTrace();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
     }
 
-    public void startSender(int port, String hostname, int neighborUID) {
-        (new Thread() {
-            @Override
-            public void run() {
-              boolean successfullyConnected = false;
-              while(!successfullyConnected)
-                try {
-                    Socket s = new Socket(hostname, port);
-                    successfullyConnected = true;
-                    BufferedWriter out = new BufferedWriter(
-                            new OutputStreamWriter(s.getOutputStream()));
-                    while (true) {
-                        // SENDER LOGIC GOES HERE
-                        out.newLine();
-                        out.flush();
-                        Thread.sleep(200);
-                    }
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-    }
-
-    public void startServer() {
+    private void startServer() {
         server = true;
         Node t = this;
         (new Thread() {
@@ -94,7 +109,5 @@ class Node{
         for(int neighbor: neighbors2weights.keySet())
             sb.append(neighbor+"    ");
         return sb.toString();
-    }
-    
-   
+    }  
 }
