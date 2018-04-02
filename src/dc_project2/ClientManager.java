@@ -31,6 +31,6 @@ public class ClientManager implements Runnable {
 	}
     
     public void handleMsg(String m){
-      // SERVER LOGIC HERE
+      owner.ghs.handleMsg(m);
     }
 }
