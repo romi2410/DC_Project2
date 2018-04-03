@@ -31,19 +31,6 @@ public class GHS {
         this.owner = owner;
     }
     
-    public GHSMessage genMsg(int nbr){
-      if(isLeader()){
-        return new BroadcastMsg(owner.uid);
-      }
-      else{
-        if(rcvdBC)
-          return new BroadcastMsg(leader, owner.uid);
-        if(rejecting.get(nbr))
-          return new RejectMsg(owner.uid);
-      }
-      return new GHSMessage();
-    }
-    
     public int handleMsg(String m){
       String msgType=m.split(" ")[0];
       if(msgType.equals("broadcast")){

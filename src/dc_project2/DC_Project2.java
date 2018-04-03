@@ -26,17 +26,7 @@ public class DC_Project2 {
         try
         {
             Scanner sc = new Scanner(new File(args[0]));
-            HashMap<Integer, Node> nodes = parseLines(sc);
-            
-            for(Node node: nodes.values())
-            {
-                uids2ports.put(node.uid, node.port);
-                uids2hosts.put(node.uid, node.hostname);
-            }
-            
-            System.out.println("\n Mapping from UIDs to Ports:");
-            nodes.values().forEach(node -> System.out.println(node.uid + " -> " + uids2hosts.get(node.uid) + ":" + uids2ports.get(node.uid)));
-            System.out.println();
+            parseLines(sc);
         }
         catch(IOException e)
         {

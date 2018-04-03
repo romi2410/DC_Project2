@@ -17,6 +17,7 @@ class Node{
     // neighbor stuff
     HashMap<Integer, Double> neighbors2weights = new HashMap<>();
     HashMap<Integer, BufferedWriter> neighbors2socket = new HashMap<>();
+    HashMap<Integer, GHSMessage> neighbors2lastmsg = new HashMap<>();
     
     // algo stuff
     GHS ghs;
@@ -61,6 +62,7 @@ class Node{
     public void connectTo(String hostname, int port, int u, double w){
         neighbors2socket.put(u, startSender(port, hostname, u));
         neighbors2weights.put(u, w);
+        neighbors2lastmsg.put(u, new GHSMessage());
         numEdges++;
     }
     
@@ -68,6 +70,15 @@ class Node{
         while(true) try {
             Socket s = new Socket(hostname, port);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+            (new Thread() {
+                @Override
+                public void run() {
+                  while(true){
+                    try{out.write(neighbors2lastmsg.get(neighborUID).toString());}
+                    catch(IOException e){ e.printStackTrace(); }
+                  }
+                }
+            }).start();
             return out;
         } catch (UnknownHostException e) {
             e.printStackTrace();
