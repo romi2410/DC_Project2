@@ -13,14 +13,17 @@ class GHSMessage{
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();
+        
         sb.append(round).append(" ");
         sb.append(senderUID).append(" ");
+        
         return sb.toString();
     }
 
     public static GHSMessage toGHSMsg(String rcvd_msg){
         String[] parsed_msg = rcvd_msg.split("\\s+");
+        
         return new GHSMessage(Integer.parseInt(parsed_msg[1]),
-                                Integer.parseInt(parsed_msg[2]));
+                              Integer.parseInt(parsed_msg[2]));
     }
 }

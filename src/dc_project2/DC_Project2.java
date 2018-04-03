@@ -52,7 +52,7 @@ public class DC_Project2 {
         int numNodes = 0;
         int numEdges = 0;
         
-        // Reaading number of nodes from config file
+        // Reading number of nodes from config file
         while(numNodes==0)
         {
             String line = sc.nextLine();
@@ -62,7 +62,7 @@ public class DC_Project2 {
             }
         }
         
-        // Create nodes
+        // Creating nodes
         for(int i=0; i < numNodes; i++)
         {
             String line = sc.nextLine();
@@ -72,37 +72,38 @@ public class DC_Project2 {
                 Node node = parseLine_Node(params);
                 nodes.put(node.uid, node);
             }
-            else 
+            else
                 i--;
         }
         
-        // Check all servers started
-        while(started.size()<numNodes)
+        // Checking if all servers have started
+        while(started.size() < numNodes)
         {
             for(Node n: nodes.values())
                 if(n.server)
                     started.add(n.uid);
         }
         
-        // Create edges
+        // Creating edges - sockets 
         while(sc.hasNext())
         {
             String line = sc.nextLine();
             
-            if(!(line.startsWith("#") || line.trim().length()==0))
+            if(!(line.startsWith("#") || line.trim().length() == 0))
             {
                 String[] params = line.trim().split("\\s+");
                 double w = Double.parseDouble(params[1]);
                 String[] tuple = params[0].substring(1, params[0].length()-1).split(",");
                 Node node1 = nodes.get(Integer.parseInt(tuple[0]));
                 Node node2 = nodes.get(Integer.parseInt(tuple[1]));
+                
                 node1.connectTo(node2.hostname, node2.port, node2.uid, w);
                 node2.connectTo(node1.hostname, node1.port, node1.uid, w);
                 numEdges += 2;
-          }
+            }
         }
         
-        // Check all edges created
+        // Checking if all edges are created
         int edgeCnt = 0;
         while(edgeCnt < numEdges)
         {
@@ -110,8 +111,8 @@ public class DC_Project2 {
             for(Node node: nodes.values())
                 edgeCnt += node.numEdges;
         }
-        // Initiate GHS
         
+        // Initiate GHS
         for(Node node: nodes.values())
             node.initGHS();
         
