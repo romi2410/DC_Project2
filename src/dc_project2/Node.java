@@ -1,7 +1,9 @@
 package dc_project2;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -17,7 +19,7 @@ class Node{
     // neighbor stuff
     HashMap<Integer, Double> neighbors2weights = new HashMap<>();
     HashMap<Integer, BufferedWriter> neighbors2socket = new HashMap<>();
-    HashMap<Integer, GHSMessage> neighbors2lastmsg = new HashMap<>();
+    HashMap<Integer, String> neighbors2lastmsg = new HashMap<>();
     
     // algo stuff
     GHS ghs;
@@ -41,18 +43,18 @@ class Node{
         startServer();
     }
     
-    private void sendTo(int rcvrUid){
-        BufferedWriter out = neighbors2socket.get(rcvrUid);
-        // SENDER LOGIC GOES HERE
-        try{
-            out.newLine();
-            out.flush();
-            Thread.sleep(200);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e){
-            e.printStackTrace();
+    public void sendTo(int rcvrUid, Object msg){
+      String serializedMsg;
+      try {
+          ByteArrayOutputStream bo = new ByteArrayOutputStream();
+          ObjectOutputStream so = new ObjectOutputStream(bo);
+          so.writeObject(msg);
+          so.flush();
+          serializedMsg = bo.toString();
+      } catch (Exception e) {
+          System.out.println(e);
       }
+      neighbors2lastmsg.put(rcvrUid, serializedMsg);
     }
     
     public void initGHS(){
@@ -62,7 +64,7 @@ class Node{
     public void connectTo(String hostname, int port, int u, double w){
         neighbors2socket.put(u, startSender(port, hostname, u));
         neighbors2weights.put(u, w);
-        neighbors2lastmsg.put(u, new GHSMessage());
+        neighbors2lastmsg.put(u, new BroadcastMessage().toString());
         numEdges++;
     }
     

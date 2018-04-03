@@ -19,7 +19,7 @@ public class ClientManager implements Runnable {
 
     @Override
     public void run() {
-	try {
+      try {
             String line;
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
             
@@ -28,10 +28,18 @@ public class ClientManager implements Runnable {
             }
 	} catch(IOException e) {
             e.printStackTrace();
-	}
+      }
     }
     
     public void handleMsg(String m){
-        owner.ghs.handleMsg(m);
+      Object message;
+       try {
+          ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
+          ObjectInputStream si = new ObjectInputStream(bi);
+          message = si.readObject();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        owner.ghs.handleMsg(message);
     }
 }
