@@ -1,15 +1,12 @@
 package dc_project2;
 
-import java.io.BufferedWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 public class GHS {
     int roundNo=0;
-    HashMap<Integer, Double> neighbors2weights;
     HashMap<Integer, Boolean> ccFromNbr = new HashMap<>();
     MWOEMsg mwoeMsg;
     
@@ -20,11 +17,10 @@ public class GHS {
     
     Node owner;
     
-    public GHS(HashMap<Integer, Double> n2w, Node owner)
+    public GHS(Node owner)
     {
         leader = owner.uid;
-        neighbors2weights = n2w;
-        for (int uid: n2w.keySet())
+        for (int uid: owner.neighbors2weights.keySet())
             this.ccFromNbr.put(uid, false);
         this.owner = owner;
     }
@@ -51,14 +47,14 @@ public class GHS {
             else
               ccFromNbr.put(nbr, false);
           for(int nbr: owner.neighbors2socket.keySet())
-            owner.sendTo(nbr, SearchMsg);
+            owner.sendTo(nbr, new SearchMsg());
         }
         else{ //reject broadcast msgs from same leader but not from parent
-          owner.sendTo(nbr, RejectMsg);
+          owner.sendTo(nbr, new RejectMsg());
         }
       }
       else{
-        owner.sendTo(m.sender, MWOEMsg);
+        owner.sendTo(m.sender, new MWOEMsg());
       }
     }
     
@@ -81,7 +77,7 @@ public class GHS {
         }
       }
     }
-    private void handleRejectMsg(Object m){
+    private void handleRejectMsg(RejectMsg m){
       ccFromNbr.put(m.sender, true);
       if(!Arrays.asList(ccFromNbr.values()).contains(false))
         owner.sendTo(parent, mwoeMsg);
