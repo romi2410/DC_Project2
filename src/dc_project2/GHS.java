@@ -47,10 +47,10 @@ public class GHS {
             else
               ccFromNbr.put(nbr, false);
           for(int nbr: owner.neighbors2socket.keySet())
-            owner.sendTo(nbr, new SearchMsg());
+            owner.sendTo(nbr, new SearchMsg(level, leader, owner.uid));
         }
         else{ //reject broadcast msgs from same leader but not from parent
-          owner.sendTo(nbr, new RejectMsg());
+          owner.sendTo(m.sender, new RejectMsg(level, owner.uid));
         }
       }
       else{
@@ -72,8 +72,9 @@ public class GHS {
           owner.sendTo(mwoeMsg.sender, new NewLeaderMsg(level+1, newLeader, mwoeMsg.leader1, mwoeMsg.leader2, owner.uid));
         }
         else{ // ABSORB
-          if(mwoeMsg.level > level)
+          if(mwoeMsg.level > level){
             
+          }
         }
       }
     }

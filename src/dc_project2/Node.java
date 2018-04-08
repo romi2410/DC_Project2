@@ -33,62 +33,12 @@ class Node{
     public Node(int u, String hn, int p, boolean test) {
         uid = u;
         port = p;
-
-        if(test)  
-            hostname = "localhost";
-        else      
-            hostname = hn;
+        hostname = (test) ? "localhost" : hn;
         
         System.out.println("Node " + uid + " started");
         startServer();
     }
     
-    public void sendTo(int rcvrUid, Object msg){
-      String serializedMsg;
-      try {
-          ByteArrayOutputStream bo = new ByteArrayOutputStream();
-          ObjectOutputStream so = new ObjectOutputStream(bo);
-          so.writeObject(msg);
-          so.flush();
-          serializedMsg = bo.toString();
-      } catch (Exception e) {
-          System.out.println(e);
-      }
-      neighbors2lastmsg.put(rcvrUid, serializedMsg);
-    }
-    
-    public void initGHS(){
-      ghs = new GHS(neighbors2weights, this);
-    }
-    
-    public void connectTo(String hostname, int port, int u, double w){
-        neighbors2socket.put(u, startSender(port, hostname, u));
-        neighbors2weights.put(u, w);
-        neighbors2lastmsg.put(u, new BroadcastMessage().toString());
-        numEdges++;
-    }
-    
-    private BufferedWriter startSender(int port, String hostname, int neighborUID) {
-        while(true) try {
-            Socket s = new Socket(hostname, port);
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-            (new Thread() {
-                @Override
-                public void run() {
-                  while(true){
-                    try{out.write(neighbors2lastmsg.get(neighborUID).toString());}
-                    catch(IOException e){ e.printStackTrace(); }
-                  }
-                }
-            }).start();
-            return out;
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     private void startServer() {
         server = true;
         Node t = this;
@@ -117,6 +67,52 @@ class Node{
                 }
             }
         }).start();
+    }
+    
+    public void sendTo(int rcvrUid, Object msg){
+      String serializedMsg;
+      try {
+          ByteArrayOutputStream bo = new ByteArrayOutputStream();
+          ObjectOutputStream so = new ObjectOutputStream(bo);
+          so.writeObject(msg);
+          so.flush();
+          serializedMsg = bo.toString();
+          neighbors2lastmsg.put(rcvrUid, serializedMsg);
+      } catch (Exception e) {
+          System.out.println(e);
+      }
+    }
+    
+    public void initGHS(){
+      ghs = new GHS(this);
+    }
+    
+    public void connectTo(String hostname, int port, int u, double w){
+        neighbors2socket.put(u, startSender(port, hostname, u));
+        neighbors2weights.put(u, w);
+        //neighbors2lastmsg.put(u, new BroadcastMessage().toString());
+        numEdges++;
+    }
+    
+    private BufferedWriter startSender(int port, String hostname, int neighborUID) {
+        while(true) try {
+            Socket s = new Socket(hostname, port);
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+            (new Thread() {
+                @Override
+                public void run() {
+                  while(true){
+                    try{out.write(neighbors2lastmsg.get(neighborUID).toString());}
+                    catch(IOException e){ e.printStackTrace(); }
+                  }
+                }
+            }).start();
+            return out;
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public String toString(){

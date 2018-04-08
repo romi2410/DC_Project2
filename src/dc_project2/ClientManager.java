@@ -33,13 +33,13 @@ public class ClientManager implements Runnable {
     
     public void handleMsg(String m){
       Object message;
-       try {
-          ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
-          ObjectInputStream si = new ObjectInputStream(bi);
-          message = si.readObject();
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-        owner.ghs.handleMsg(message);
+      try {
+         ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
+         ObjectInputStream si = new ObjectInputStream(bi);
+         message = si.readObject();
+         owner.ghs.handleMsg(message);
+       } catch (Exception e) {
+           System.out.println(e);
+       }
     }
 }
