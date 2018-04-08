@@ -38,7 +38,6 @@ class Node{
         System.out.println("Node " + uid + " started");
         startServer();
     }
-    
     private void startServer() {
         server = true;
         Node t = this;
@@ -68,32 +67,12 @@ class Node{
             }
         }).start();
     }
-    
-    public void sendTo(int rcvrUid, Object msg){
-      String serializedMsg;
-      try {
-          ByteArrayOutputStream bo = new ByteArrayOutputStream();
-          ObjectOutputStream so = new ObjectOutputStream(bo);
-          so.writeObject(msg);
-          so.flush();
-          serializedMsg = bo.toString();
-          neighbors2lastmsg.put(rcvrUid, serializedMsg);
-      } catch (Exception e) {
-          System.out.println(e);
-      }
-    }
-    
-    public void initGHS(){
-      ghs = new GHS(this);
-    }
-    
     public void connectTo(String hostname, int port, int u, double w){
         neighbors2socket.put(u, startSender(port, hostname, u));
         neighbors2weights.put(u, w);
         //neighbors2lastmsg.put(u, new BroadcastMessage().toString());
         numEdges++;
     }
-    
     private BufferedWriter startSender(int port, String hostname, int neighborUID) {
         while(true) try {
             Socket s = new Socket(hostname, port);
@@ -113,6 +92,28 @@ class Node{
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+    public void initGHS(){
+      ghs = new GHS(this);
+    }
+    
+    
+    // Update message being sent to neighbor
+    public void sendTo(int rcvrUid, Object newMsg){
+      String prevMsg = neighbors2lastmsg.get(rcvrUid);  // use prevMsg if newMsg serialization fails
+      neighbors2lastmsg.put(rcvrUid, serialize(newMsg, prevMsg));
+    }
+    private String serialize(Object msg, String defaultStr){
+      ByteArrayOutputStream bo = new ByteArrayOutputStream();
+      try {
+          ObjectOutputStream so = new ObjectOutputStream(bo);
+          so.writeObject(msg);
+          so.flush();
+          return so.toString();
+      } catch (Exception e) {
+          System.out.println(e);
+          return defaultStr;
+      }
     }
 
     public String toString(){

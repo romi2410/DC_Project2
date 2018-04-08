@@ -104,7 +104,6 @@ public class DC_Project2 {
                 String[] tuple = params[0].substring(1, params[0].length()-1).split(",");
                 Node node1 = nodes.get(Integer.parseInt(tuple[0]));
                 Node node2 = nodes.get(Integer.parseInt(tuple[1]));
-                
                 node1.connectTo(node2.hostname, node2.port, node2.uid, w);
                 node2.connectTo(node1.hostname, node1.port, node1.uid, w);
                 numEdges += 2;
