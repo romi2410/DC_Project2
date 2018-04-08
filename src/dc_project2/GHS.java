@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 public class GHS {
     int roundNo=0;
@@ -15,6 +16,7 @@ public class GHS {
     int leader;
     int level = 0;
     int parent;
+    ArrayList<Integer> children = new ArrayList<Integer>();
     
     Node owner;
     
@@ -112,5 +114,12 @@ public class GHS {
     
     public boolean isLeader(){
       return owner.uid==leader;
+    }
+    
+    private void terminate(){
+      String mstNbrs = 
+              children.stream().map(Object::toString).collect(Collectors.joining(", "))
+              + String.valueOf(parent);
+      System.out.println(owner.uid + " terminated;\tNeighbors in MST: " + mstNbrs);
     }
 }
