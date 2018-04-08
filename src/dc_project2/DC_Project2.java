@@ -10,9 +10,7 @@ import org.slf4j.LoggerFactory;
 public class DC_Project2 {
   
   static boolean test = false;
-  static HashMap<Integer, Integer> uids2ports = new HashMap<Integer, Integer>();
-  static HashMap<Integer, String> uids2hosts = new HashMap<Integer, String>();
-  static Logger logger = LoggerFactory.getLogger(DC_Project2.class);
+  //static Logger logger = LoggerFactory.getLogger(DC_Project2.class);
 
   public static void main(String[] args) throws IOException {
         //logger.info("Hello World");
@@ -26,7 +24,16 @@ public class DC_Project2 {
         try
         {
             Scanner sc = new Scanner(new File(args[0]));
-            parseLines(sc);
+            
+            int numNodes = readNumNodes(sc);
+            HashMap<Integer, Node> nodes = readAndCreateNodes(sc, numNodes);
+            while(serversStillStarting(nodes, numNodes)){}
+            
+            int numEdges = readAndCreateEdges(sc, nodes);
+            while(socketsStillStarting(nodes, numEdges)){}
+            
+            for(Node node: nodes.values())
+                node.initGHS();
         }
         catch(IOException e)
         {
@@ -35,15 +42,12 @@ public class DC_Project2 {
         }
     }
   
-    public static HashMap<Integer, Node> parseLines(Scanner sc){
-        
-        HashMap<Integer, Node> nodes = new HashMap<>();
-        HashSet<Integer> started = new HashSet<>();
-        int numNodes = 0;
-        int numEdges = 0;
-        
-        // Reading number of nodes from config file
-        while(numNodes==0)
+  
+  
+  
+    public static int readNumNodes(Scanner sc){
+      int numNodes = 0;
+      while(numNodes==0)
         {
             String line = sc.nextLine();
             if(!(line.startsWith("#") || line.trim().length() == 0))
@@ -51,8 +55,18 @@ public class DC_Project2 {
                 numNodes = Integer.parseInt(line.trim());
             }
         }
-        
-        // Creating nodes
+      return numNodes;
+    }
+    
+    public static Node parseLine_Node(String[] nodeParams){
+        String uid = nodeParams[0];
+        String hostname = nodeParams[1];
+        String port = nodeParams[2];
+        return new Node(Integer.parseInt(uid), hostname, Integer.parseInt(port), test);
+    }
+    
+    public static HashMap<Integer, Node> readAndCreateNodes(Scanner sc, int numNodes){
+        HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
         for(int i=0; i < numNodes; i++)
         {
             String line = sc.nextLine();
@@ -65,17 +79,21 @@ public class DC_Project2 {
             else
                 i--;
         }
-        
-        // Checking if all servers have started
-        while(started.size() < numNodes)
-        {
-            for(Node n: nodes.values())
-                if(n.server)
-                    started.add(n.uid);
-        }
-        
-        // Creating edges - sockets 
-        while(sc.hasNext())
+        return nodes;
+    }
+    
+    public static boolean serversStillStarting(HashMap<Integer, Node> nodes, int numNodes){
+      HashSet<Integer> started = new HashSet<>();
+      for(Node n: nodes.values())
+          if(n.server)
+              started.add(n.uid);
+      return started.size() < numNodes;
+    }
+    
+    // returns number of edges
+    public static int readAndCreateEdges(Scanner sc, HashMap<Integer, Node> nodes){
+      int numEdges = 0;
+      while(sc.hasNext())
         {
             String line = sc.nextLine();
             
@@ -92,28 +110,15 @@ public class DC_Project2 {
                 numEdges += 2;
             }
         }
-        
-        // Checking if all edges are created
-        int edgeCnt = 0;
-        while(edgeCnt < numEdges)
-        {
-            edgeCnt = 0;
-            for(Node node: nodes.values())
-                edgeCnt += node.numEdges;
-        }
-        
-        // Initiate GHS
-        for(Node node: nodes.values())
-            node.initGHS();
-        
-        return nodes;
+      return numEdges;
     }
     
-    public static Node parseLine_Node(String[] nodeParams){
-        String uid = nodeParams[0];
-        String hostname = nodeParams[1];
-        String port = nodeParams[2];
-        return new Node(Integer.parseInt(uid), hostname, Integer.parseInt(port), test);
+    public static boolean socketsStillStarting(HashMap<Integer, Node> nodes, int numEdges){
+        int edgeCnt = 0;
+        edgeCnt = 0;
+        for(Node node: nodes.values())
+            edgeCnt += node.numEdges;
+        return edgeCnt < numEdges;
     }
   
 }
