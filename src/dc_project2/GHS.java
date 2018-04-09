@@ -6,23 +6,33 @@ import java.util.HashMap;
 import java.util.stream.Collectors;
 
 public class GHS {
-    int roundNo=0;
+    // send CC to parent only once rcvd CC/Reject from all nbrs
     HashMap<Integer, Boolean> ccFromNbr = new HashMap<>();
+    public boolean rcvdFromAllNbrs(){
+      return !Arrays.asList(ccFromNbr.values()).contains(false);
+    }
+    
     MWOEMsg mwoeMsg;
     
     int leader;
     int level = 0;
     int parent;
-    ArrayList<Integer> children = new ArrayList<Integer>();
+    ArrayList<Integer> treeNbrs = new ArrayList<Integer>();
     
-    Node owner;
+    Node node;
     
-    public GHS(Node owner)
+    public GHS(Node node)
     {
-        leader = owner.uid;
-        for (int uid: owner.neighbors2weights.keySet())
-            this.ccFromNbr.put(uid, false);
-        this.owner = owner;
+        leader = node.uid;
+        this.node = node;
+        resetCCfromNbrs();
+        for (int uid: node.neighbors())
+          node.sendTo(uid, new SearchMsg(level, leader, node.uid).toString());
+    }
+    
+    private void resetCCfromNbrs(){
+      for (int uid: node.neighbors())
+          this.ccFromNbr.put(uid, false);
     }
     
     public void handleMsg(Object msg){
@@ -38,64 +48,84 @@ public class GHS {
     }
     
     private void handleSearchMsg(SearchMsg m){
-      if(m.leader==leader){
-        if(m.sender==parent){
-          level = m.level;
-          for(int nbr: ccFromNbr.keySet())
-            if(m.sender == nbr)
-              ccFromNbr.put(nbr, true);
-            else
-              ccFromNbr.put(nbr, false);
-          for(int nbr: owner.neighbors2socket.keySet())
-            owner.sendTo(nbr, new SearchMsg(level, leader, owner.uid));
-        }
-        else{ //reject broadcast msgs from same leader but not from parent
-          owner.sendTo(m.sender, new RejectMsg(level, owner.uid));
-        }
+      if(m.leader == leader)
+        handleSearchMsg_SameLeader(m);
+      else if(m.leader!=leader)
+        node.sendTo(m.sender, new MWOEMsg(level, m.leader, leader, m.sender, node.uid, node.getWeight(m.sender), node.uid));
+    }
+    private void handleSearchMsg_SameLeader(SearchMsg m){
+      if(m.sender == parent){
+        level = m.level;
+        resetCCfromNbrs();
+        ccFromNbr.put(parent, true);
+        for(int nbr: node.neighbors())
+          node.sendTo(nbr, new SearchMsg(level, leader, node.uid));
       }
-      else{
-        owner.sendTo(m.sender, new MWOEMsg());
-      }
+      else if(m.sender != parent)
+        node.sendTo(m.sender, new RejectMsg(level, node.uid));
     }
     
     private void handleMWOEMsg(MWOEMsg m){
       ccFromNbr.put(m.sender, true);
-      if(m.weight < mwoeMsg.weight)
+      if(m.weight < mwoeMsg.weight){ // update min wgt outgoing edge, if lesser
         mwoeMsg = m;
+        mwoeMsg.sender = node.uid;
+      }
       
-      if(!isLeader()){
-        if(!Arrays.asList(ccFromNbr.values()).contains(false))
-          owner.sendTo(parent, mwoeMsg);
-      }else{
-        if(mwoeMsg.level==level){ // MERGE
-          int newLeader = Math.max(mwoeMsg.extnode, mwoeMsg.leafnode);
-          owner.sendTo(mwoeMsg.sender, new NewLeaderMsg(level+1, newLeader, mwoeMsg.leader1, mwoeMsg.leader2, owner.uid));
+      if(!isLeader() && rcvdFromAllNbrs())
+        node.sendTo(parent, mwoeMsg);
+      else if(isLeader())
+        node.sendToSynchronizer(m);
+        //node.sendTo(mwoeMsg.sender, new MergeMsg());
+    }
+    private void merge(MWOEMsg mwoeMsg){
+      int newLeader = Math.max(mwoeMsg.extnode, mwoeMsg.leafnode);
+      NewLeaderMsg newLeaderMsg = new NewLeaderMsg(level+1, newLeader, mwoeMsg.leader1, mwoeMsg.leader2, node.uid);
+      node.sendTo(mwoeMsg.sender, newLeaderMsg);
+      level++;
+      leader = newLeader;
+      parent = mwoeMsg.sender;
+    }
+    
+    private void handleMergeMsg(MergeMsg m){
+      if(node.uid!=m.leafNode)
+        node.sentTo(m.path.next);
+      else if(node.uid==m.leafNode){
+        requestAbsorb(m.externalNode); //will add node.uid to m.externalNode's tree neighbors
+        boolean inBroadcast = checkStatus(m.externalNode);
+        if(inBroadcast){        // Case1
+          
         }
-        else{ // ABSORB
-          if(mwoeMsg.level > level){
-            
+        else if(!inBroadcast){  // Case2
+          if(mwoeMsg.level==level)          // MERGE
+            merge(mwoeMsg);
+          else if(level < mwoeMsg.level){   // ABSORB
+            level = Math.max(level, mwoeMsg.level);
+            // INCOMPLETE
           }
+          else if(level > mwoeMsg.level)
+            System.out.println("Unexpected case: level > mwoeMsg.level");
         }
       }
     }
+    
     private void handleRejectMsg(RejectMsg m){
       ccFromNbr.put(m.sender, true);
       if(!Arrays.asList(ccFromNbr.values()).contains(false))
-        owner.sendTo(parent, mwoeMsg);
+        node.sendTo(parent, mwoeMsg);
     }
     
     private void handleNewLeaderMsg(NewLeaderMsg m){
       if(leader==m.oldLeader1 || leader==m.oldLeader2){
         leader = m.newLeader;
         broadcast(m);
-        for (int uid: ccFromNbr.keySet())
-            this.ccFromNbr.put(uid, false);
+        resetCCfromNbrs();
       }
     }
     
     private void broadcast(Object msg){
-        for(int nbr: owner.neighbors2socket.keySet())
-          owner.sendTo(nbr, msg);
+      for(int nbr: node.neighbors())
+        node.sendTo(nbr, msg);
     }
     
     // returns uid of smaller
@@ -110,13 +140,11 @@ public class GHS {
     }
     
     public boolean isLeader(){
-      return owner.uid==leader;
+      return node.uid==leader;
     }
     
     private void terminate(){
-      String mstNbrs = 
-              children.stream().map(Object::toString).collect(Collectors.joining(", "))
-              + String.valueOf(parent);
-      System.out.println(owner.uid + " terminated;\tNeighbors in MST: " + mstNbrs);
+      String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining("-"+node.uid+", "));
+      System.out.println(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs);
     }
 }

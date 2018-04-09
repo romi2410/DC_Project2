@@ -2,15 +2,13 @@ package dc_project2;
 import java.util.StringJoiner;
 import java.lang.reflect.Field;
 
-class SearchMsg implements java.io.Serializable {
-    int level;
+// Broadcast
+class SearchMsg extends Message implements java.io.Serializable {
     int leader;
-    int sender;
     
     public SearchMsg(int level, int leader, int sender){
-        this.level = level;
-        this.leader = leader;
-        this.sender = sender;
+      super(level, sender);
+      this.leader = leader;
     }
 
     @Override

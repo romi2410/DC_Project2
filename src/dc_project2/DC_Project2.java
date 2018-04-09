@@ -27,10 +27,14 @@ public class DC_Project2 {
             
             int numNodes = readNumNodes(sc);
             HashMap<Integer, Node> nodes = readAndCreateNodes(sc, numNodes);
-            while(serversStillStarting(nodes, numNodes)){}
+            Synchronizer s = initSynchronizer(nodes);
+            while(serversStillStarting(nodes, numNodes, s)){}
             
-            int numEdges = readAndCreateEdges(sc, nodes);
-            while(socketsStillStarting(nodes, numEdges)){}
+            int numEdges = readAndCreateEdges(sc, nodes) + 2*numNodes;  //2*numNodes = # edges between nodes and synchronizer
+            s.connectToNodes(new HashSet<>(nodes.values()));
+            for(Node node: nodes.values())
+                node.connectToSynchronizer(s.hostname, s.port);
+            while(socketsStillStarting(nodes, numEdges, s)){}
             
             for(Node node: nodes.values())
                 node.initGHS();
@@ -51,9 +55,7 @@ public class DC_Project2 {
         {
             String line = sc.nextLine();
             if(!(line.startsWith("#") || line.trim().length() == 0))
-            {
                 numNodes = Integer.parseInt(line.trim());
-            }
         }
       return numNodes;
     }
@@ -82,12 +84,12 @@ public class DC_Project2 {
         return nodes;
     }
     
-    public static boolean serversStillStarting(HashMap<Integer, Node> nodes, int numNodes){
+    public static boolean serversStillStarting(HashMap<Integer, Node> nodes, int numNodes, Synchronizer sync){
       HashSet<Integer> started = new HashSet<>();
       for(Node n: nodes.values())
           if(n.server)
               started.add(n.uid);
-      return started.size() < numNodes;
+      return (started.size() < numNodes) && sync.server;
     }
     
     // returns number of edges
@@ -112,12 +114,24 @@ public class DC_Project2 {
       return numEdges;
     }
     
-    public static boolean socketsStillStarting(HashMap<Integer, Node> nodes, int numEdges){
+    public static boolean socketsStillStarting(HashMap<Integer, Node> nodes, int numEdges, Synchronizer sync){
         int edgeCnt = 0;
         edgeCnt = 0;
         for(Node node: nodes.values())
             edgeCnt += node.numEdges;
+        edgeCnt += sync.numEdges;
         return edgeCnt < numEdges;
+    }
+    
+    // initializes the Synchronizer
+      // with an arbitrary hostname from the config file
+      // and one plus the largest port number from the config file
+    public static Synchronizer initSynchronizer(HashMap<Integer, Node> nodes){
+      String s_hostname = nodes.entrySet().iterator().next().getValue().hostname;
+      int s_port = 0;                                                             
+      for(Node node: nodes.values())
+        s_port = Math.max(s_port, (node.port+1) % 65535);
+      return new Synchronizer(nodes, s_hostname, s_port);
     }
   
 }

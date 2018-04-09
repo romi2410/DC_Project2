@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.Set;
 
 class Node{
     // node stuff
@@ -17,13 +18,17 @@ class Node{
     String hostname;
     
     // neighbor stuff
-    HashMap<Integer, Double> neighbors2weights = new HashMap<>();
-    HashMap<Integer, BufferedWriter> neighbors2socket = new HashMap<>();
-    HashMap<Integer, String> neighbors2lastmsg = new HashMap<>();
+    private HashMap<Integer, Double> neighbors2weights  = new HashMap<>();
+    private HashMap<Integer, String> neighbors2lastsent = new HashMap<>();
+    private HashMap<Integer, String> neighbors2lastrcvd = new HashMap<>();
+    public  Set<Integer>             neighbors()        { return neighbors2weights.keySet(); }
+    public  double                   getWeight(int nbr) { return neighbors2weights.get(nbr); }
     
     // algo stuff
     GHS ghs;
-    int round;
+    
+    // synchronizer stuff
+    String sendToSynchronizer = "";
     
     // used by DC_Project2 for verification before initiating GHS
     boolean server = false;
@@ -31,10 +36,7 @@ class Node{
     
     
     public Node(int u, String hn, int p, boolean test) {
-        uid = u;
-        port = p;
-        hostname = (test) ? "localhost" : hn;
-        
+        uid = u;  port = p;   hostname = (test) ? "localhost" : hn;
         System.out.println("Node " + uid + " started");
         startServer();
     }
@@ -67,30 +69,47 @@ class Node{
             }
         }).start();
     }
-    public void connectTo(String hostname, int port, int u, double w){
-        neighbors2socket.put(u, startSender(port, hostname, u));
-        neighbors2weights.put(u, w);
-        //neighbors2lastmsg.put(u, new BroadcastMessage().toString());
-        numEdges++;
+    public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
+      startSender(nbrport, nbrhostname, nbrUID);
+      neighbors2weights.put(nbrUID, w);
+      neighbors2lastsent.put(nbrUID, "");
+      neighbors2lastrcvd.put(nbrUID, "");
+      numEdges++;
     }
-    private BufferedWriter startSender(int port, String hostname, int neighborUID) {
+    private void startSender(int nbrport, String nbrhostname, int nbrUID) {
         while(true) try {
-            Socket s = new Socket(hostname, port);
+            Socket s = new Socket(nbrhostname, nbrport);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             (new Thread() {
                 @Override
                 public void run() {
                   while(true){
-                    try{out.write(neighbors2lastmsg.get(neighborUID).toString());}
+                    try{out.write(neighbors2lastsent.get(nbrUID));}
                     catch(IOException e){ e.printStackTrace(); }
                   }
                 }
             }).start();
-            return out;
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    public void connectToSynchronizer(String syncHostname, int syncPort){
+        while(true) try {
+            Socket s = new Socket(syncHostname, syncPort);
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+            (new Thread() {
+                @Override
+                public void run() {
+                  while(true)
+                    try                   { out.write(sendToSynchronizer); }
+                    catch(IOException e)  { e.printStackTrace(); }
+                }
+            }).start();
+            numEdges++;
+        } catch (UnknownHostException e)  { e.printStackTrace();
+        } catch (IOException e)           { e.printStackTrace();
         }
     }
     public void initGHS(){
@@ -100,8 +119,12 @@ class Node{
     
     // Update message being sent to neighbor
     public void sendTo(int rcvrUid, Object newMsg){
-      String prevMsg = neighbors2lastmsg.get(rcvrUid);  // use prevMsg if newMsg serialization fails
-      neighbors2lastmsg.put(rcvrUid, serialize(newMsg, prevMsg));
+      String prevMsg = neighbors2lastsent.get(rcvrUid);  // use prevMsg if newMsg serialization fails
+      neighbors2lastsent.put(rcvrUid, serialize(newMsg, prevMsg));
+    }
+    public void sendToSynchronizer(Object newMsg){
+      String prevMsg = sendToSynchronizer;  // use prevMsg if newMsg serialization fails
+      sendToSynchronizer = serialize(newMsg, prevMsg);
     }
     private String serialize(Object msg, String defaultStr){
       ByteArrayOutputStream bo = new ByteArrayOutputStream();
