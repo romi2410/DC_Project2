@@ -4,13 +4,12 @@ import java.net.*;
 import java.io.*;
 
 public class ClientManagerSynchronizer implements Runnable {
-	
     private Socket client;
-    Synchronizer owner;
+    Synchronizer sync;
 
-    public ClientManagerSynchronizer(Socket client, Synchronizer owner) {
+    public ClientManagerSynchronizer(Socket client, Synchronizer sync) {
       this.client = client;
-      this.owner = owner;
+      this.sync = sync;
     }
 
     public ClientManagerSynchronizer(Socket client) {
@@ -37,7 +36,7 @@ public class ClientManagerSynchronizer implements Runnable {
          ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
          ObjectInputStream si = new ObjectInputStream(bi);
          message =(MWOEMsg) si.readObject();
-         owner.handleMsg(message);
+         sync.handleMsg(message);
        } catch (Exception e) {
            System.out.println(e);
        }

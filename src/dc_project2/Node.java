@@ -14,19 +14,14 @@ class Node{
     int uid;
     int port;
     String hostname;
+    GHS ghs;
     
     // neighbor stuff
     private HashMap<Integer, Double> neighbors2weights  = new HashMap<>();
     private HashMap<Integer, String> neighbors2lastsent = new HashMap<>();
-    private HashMap<Integer, String> neighbors2lastrcvd = new HashMap<>();
     public  Set<Integer>             neighbors()        { return neighbors2weights.keySet(); }
     public  double                   getWeight(int nbr) { return neighbors2weights.get(nbr); }
-    
-    // algo stuff
-    GHS ghs;
-    
-    // synchronizer stuff
-    String sendToSynchronizer = "";
+    private String                   sendToSynchronizer = "";
     
     // used by DC_Project2 for verification before initiating GHS
     boolean server = false;
@@ -71,7 +66,6 @@ class Node{
       startSender(nbrport, nbrhostname, nbrUID);
       neighbors2weights.put(nbrUID, w);
       neighbors2lastsent.put(nbrUID, "");
-      neighbors2lastrcvd.put(nbrUID, "");
       numEdges++;
     }
     private void startSender(int nbrport, String nbrhostname, int nbrUID) {

@@ -25,8 +25,7 @@ public class Synchronizer {
   String hostname;
   int port;
   
-  HashMap<Integer, String> nodes2lastsent = new HashMap<>();
-  HashMap<Integer, String> nodes2lastrcvd = new HashMap<>();
+  HashMap<Integer, String> sendTo = new HashMap<>();
   
   boolean server = false;
   int numEdges = 0;
@@ -108,7 +107,7 @@ public class Synchronizer {
   }
   private void terminate(){
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
-    for(Integer node: nodes2lastsent.keySet())
+    for(Integer node: sendTo.keySet())
       sendTo(node, terminateMsg);
   }
   
@@ -119,8 +118,7 @@ public class Synchronizer {
   }
   private void connectTo(String nodeHostname, int nodePort, int nodeUID){
     startSender(nodeHostname, nodePort, nodeUID);
-    nodes2lastsent.put(nodeUID, "");
-    nodes2lastrcvd.put(nodeUID, "");
+    sendTo.put(nodeUID, "");
     numEdges++;
   }
   private BufferedWriter startSender(String nodeHostname, int nodePort, int nodeUID){
@@ -131,7 +129,7 @@ public class Synchronizer {
                 @Override
                 public void run() {
                   while(true){
-                    try                 { out.write(nodes2lastsent.get(nodeUID)); }
+                    try                 { out.write(sendTo.get(nodeUID)); }
                     catch(IOException e){ e.printStackTrace(); }
                   }
                 }
@@ -146,7 +144,7 @@ public class Synchronizer {
     public void sendTo(int rcvrUid, Message newMsg){
       newMsg.sender = uid;
       try{
-        nodes2lastsent.put(rcvrUid, newMsg.serialize());
+        sendTo.put(rcvrUid, newMsg.serialize());
       } catch (IOException e) {
           System.out.println(e);
           System.out.println("Attempt to serialize " + newMsg.toString() + " failed");
