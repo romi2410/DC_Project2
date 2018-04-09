@@ -15,7 +15,6 @@ public class GHS {
     MWOEMsg mwoeMsg;
     
     int leader;
-    int level = 0;
     int parent = -1;  // parent of leader = -1 = synchronizer uid
     ArrayList<Integer> treeNbrs = new ArrayList<Integer>();
     
@@ -27,7 +26,7 @@ public class GHS {
         this.node = node;
         resetCCfromNbrs();
         for (int uid: node.neighbors())
-          node.sendTo(uid, new SearchMsg(level, leader, node.uid));
+          node.sendTo(uid, new SearchMsg(leader, node.uid));
     }
     
     private void resetCCfromNbrs(){
@@ -51,18 +50,17 @@ public class GHS {
       if(m.leader == leader)
         handleSearchMsg_SameLeader(m);
       else if(m.leader!=leader)
-        node.sendTo(m.sender, new MWOEMsg(level, m.leader, leader, m.sender, node.uid, node.getWeight(m.sender), node.uid));
+        node.sendTo(m.sender, new MWOEMsg(m.leader, leader, m.sender, node.uid, node.getWeight(m.sender), node.uid));
     }
     private void handleSearchMsg_SameLeader(SearchMsg m){
       if(m.sender == parent){
-        level = m.level;
         resetCCfromNbrs();
         ccFromNbr.put(parent, true);
         for(int nbr: node.neighbors())
-          node.sendTo(nbr, new SearchMsg(level, leader, node.uid));
+          node.sendTo(nbr, new SearchMsg(leader, node.uid));
       }
       else if(m.sender != parent)
-        node.sendTo(m.sender, new RejectMsg(level, node.uid));
+        node.sendTo(m.sender, new RejectMsg(node.uid));
     }
     
     private void handleMWOEMsg(MWOEMsg m){

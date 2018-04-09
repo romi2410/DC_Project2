@@ -107,7 +107,7 @@ public class Synchronizer {
     return mergedSet;
   }
   private void terminate(){
-    TerminateMsg terminateMsg = new TerminateMsg(level, this.uid));
+    TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
     for(Integer node: nodes2lastsent.keySet())
       sendTo(node, terminateMsg);
   }

@@ -1,6 +1,8 @@
 package dc_project2;
 public class TerminateMsg extends Message{
-    public TerminateMsg(int level, int sender){
-      super(level, sender);
-    }
+  int level;
+  public TerminateMsg(int level, int sender){
+    super(sender);
+    this.level = level;
+  }
 }

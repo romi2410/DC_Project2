@@ -7,10 +7,9 @@ import java.lang.reflect.Field;
 import java.util.StringJoiner;
 
 abstract class Message implements java.io.Serializable{
-    int level, sender;
+    int sender;
     
-    public Message(int level, int sender){
-        this.level = level;
+    public Message(int sender){
         this.sender = sender;
     }
 

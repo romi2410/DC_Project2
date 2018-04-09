@@ -10,8 +10,8 @@ public class MWOEMsg extends Message implements Comparable<MWOEMsg>{
     int externalNode;
     double weight;
     
-    public MWOEMsg(int level, int leader1, int leader2, int leafnode, int extnode, double weight, int sender){
-      super(level, sender);
+    public MWOEMsg(int leader1, int leader2, int leafnode, int extnode, double weight, int sender){
+      super(sender);
       this.leader1 = leader1;
       this.leader2 = leader2;
       this.leafnode = leafnode;

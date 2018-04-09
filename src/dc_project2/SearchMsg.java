@@ -4,8 +4,8 @@ package dc_project2;
 class SearchMsg extends Message{
     int leader;
     
-    public SearchMsg(int level, int leader, int sender){
-      super(level, sender);
+    public SearchMsg(int leader, int sender){
+      super(sender);
       this.leader = leader;
     }
 }
