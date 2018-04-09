@@ -67,10 +67,8 @@ public class GHS {
     
     private void handleMWOEMsg(MWOEMsg m){
       ccFromNbr.put(m.sender, true);
-      if(m.weight < mwoeMsg.weight){ // update min wgt outgoing edge, if lesser
+      if(mwoeMsg.compareTo(m)<0)  // update MWOE if new one greater
         mwoeMsg = m;
-        mwoeMsg.sender = node.uid;
-      }
       
       if(!isLeader() && rcvdFromAllNbrs())
         node.sendTo(parent, mwoeMsg);
@@ -79,7 +77,7 @@ public class GHS {
         //node.sendTo(mwoeMsg.sender, new MergeMsg());
     }
     private void merge(MWOEMsg mwoeMsg){
-      int newLeader = Math.max(mwoeMsg.extnode, mwoeMsg.leafnode);
+      int newLeader = Math.max(mwoeMsg.externalNode, mwoeMsg.leafnode);
       NewLeaderMsg newLeaderMsg = new NewLeaderMsg(level+1, newLeader, mwoeMsg.leader1, mwoeMsg.leader2, node.uid);
       node.sendTo(mwoeMsg.sender, newLeaderMsg);
       level++;
