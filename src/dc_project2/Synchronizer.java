@@ -18,6 +18,7 @@ import java.util.Set;
 public class Synchronizer {
   
   int level = 0;
+  HashMap<Integer, Integer> wantsToMergeWith  = new HashMap<Integer, Integer>();
   HashMap<Integer, HashSet> leaders2component = new HashMap<Integer, HashSet>();
   
   String hostname;
@@ -71,7 +72,37 @@ public class Synchronizer {
         }).start();
   }
   public void handleMsg(MWOEMsg m){
+    wantsToMergeWith.put(m.sender, m.mergeWithLeader);
+    if(wantsToMergeWith.size() == leaders2component.size())
+      mergePhase();
+  }
+  private void mergePhase(){
+    for(int leaderFrom: wantsToMergeWith.keySet()){
+      int leaderTo = wantsToMergeWith.get(leaderFrom);
+      if(wantsToMergeWith.get(leaderTo).equals(leaderFrom))
+        resolveMutualMerge(leaderFrom, leaderTo);
+    }
+    HashMap<Integer, HashSet> leaders2componentNew = new HashMap<Integer, HashSet>();
+    for(int leaderFrom: wantsToMergeWith.keySet()){
+      int leaderTo = wantsToMergeWith.get(leaderFrom);
+      leaders2componentNew.put(leaderTo, merge(leaderTo, leaderFrom));
+    }
+    leaders2component = leaders2componentNew;   level++;  //update leaders2component and level
+    wantsToMergeWith = new HashMap<Integer, Integer>();   //reset wantsToMergeWith
+  }
+  private void resolveMutualMerge(int leaderFrom, int leaderTo){
+    int bigLeader = Math.max(leaderFrom, leaderTo);
+    int smallLeader = Math.min(leaderFrom, leaderTo);
+    wantsToMergeWith.put(bigLeader, bigLeader);       //bigLeader points to itself.
     
+    for(int leaderFrom2: wantsToMergeWith.keySet())   //everyone who wanted to merge with smallLeader,
+      if(wantsToMergeWith.get(leaderFrom2).equals(smallLeader)) //will now merge with bigLeader.
+        wantsToMergeWith.put(leaderFrom2, bigLeader);
+  }
+  private HashSet<Integer> merge(int leader1, int leader2){
+    HashSet mergedSet = new HashSet(leaders2component.get(leader1));
+    mergedSet.addAll(leaders2component.get(leader2));
+    return mergedSet;
   }
   
   

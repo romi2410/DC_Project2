@@ -118,11 +118,13 @@ class Node{
     
     
     // Update message being sent to neighbor
-    public void sendTo(int rcvrUid, Object newMsg){
+    public void sendTo(int rcvrUid, Message newMsg){
+      newMsg.sender = uid;
       String prevMsg = neighbors2lastsent.get(rcvrUid);  // use prevMsg if newMsg serialization fails
       neighbors2lastsent.put(rcvrUid, serialize(newMsg, prevMsg));
     }
-    public void sendToSynchronizer(Object newMsg){
+    public void sendToSynchronizer(Message newMsg){
+      newMsg.sender = uid;
       String prevMsg = sendToSynchronizer;  // use prevMsg if newMsg serialization fails
       sendToSynchronizer = serialize(newMsg, prevMsg);
     }
