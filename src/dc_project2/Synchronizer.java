@@ -17,6 +17,7 @@ import java.util.Set;
 // handles termination (single leader in system)
 public class Synchronizer {
   
+  int uid = -1 ; // uniquely identifies synchronization messages
   int level = 0;
   HashMap<Integer, Integer> wantsToMergeWith  = new HashMap<Integer, Integer>();
   HashMap<Integer, HashSet> leaders2component = new HashMap<Integer, HashSet>();
@@ -24,9 +25,8 @@ public class Synchronizer {
   String hostname;
   int port;
   
-  HashMap<Integer, BufferedWriter> nodes2sockets  = new HashMap<>();
-  HashMap<Integer, String>         nodes2lastsent = new HashMap<>();
-  HashMap<Integer, String>         nodes2lastrcvd = new HashMap<>();
+  HashMap<Integer, String> nodes2lastsent = new HashMap<>();
+  HashMap<Integer, String> nodes2lastrcvd = new HashMap<>();
   
   boolean server = false;
   int numEdges = 0;
@@ -39,7 +39,7 @@ public class Synchronizer {
     }
     startServer();
     for(Node node: nodes.values())
-      nodes2sockets.put(node.uid, startSender(node.hostname, node.port, node.uid));
+      startSender(node.hostname, node.port, node.uid);
   }
   
   private void startServer(){
@@ -89,6 +89,8 @@ public class Synchronizer {
     }
     leaders2component = leaders2componentNew;   level++;  //update leaders2component and level
     wantsToMergeWith = new HashMap<Integer, Integer>();   //reset wantsToMergeWith
+    if(leaders2component.size()==1)
+      terminate();
   }
   private void resolveMutualMerge(int leaderFrom, int leaderTo){
     int bigLeader = Math.max(leaderFrom, leaderTo);
@@ -103,6 +105,11 @@ public class Synchronizer {
     HashSet mergedSet = new HashSet(leaders2component.get(leader1));
     mergedSet.addAll(leaders2component.get(leader2));
     return mergedSet;
+  }
+  private void terminate(){
+    TerminateMsg terminateMsg = new TerminateMsg(level, this.uid));
+    for(Integer node: nodes2lastsent.keySet())
+      sendTo(node, terminateMsg);
   }
   
   
@@ -135,5 +142,15 @@ public class Synchronizer {
         }
     }
   
+    // Update message being sent to neighbor
+    public void sendTo(int rcvrUid, Message newMsg){
+      newMsg.sender = uid;
+      try{
+        nodes2lastsent.put(rcvrUid, newMsg.serialize());
+      } catch (IOException e) {
+          System.out.println(e);
+          System.out.println("Attempt to serialize " + newMsg.toString() + " failed");
+      }
+    }
   
 }

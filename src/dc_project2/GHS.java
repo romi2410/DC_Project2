@@ -16,7 +16,7 @@ public class GHS {
     
     int leader;
     int level = 0;
-    int parent;
+    int parent = -1;  // parent of leader = -1 = synchronizer uid
     ArrayList<Integer> treeNbrs = new ArrayList<Integer>();
     
     Node node;
@@ -70,11 +70,8 @@ public class GHS {
       if(mwoeMsg.compareTo(m)<0)  // update MWOE if new one greater
         mwoeMsg = m;
       
-      if(!isLeader() && rcvdFromAllNbrs())
-        node.sendTo(parent, mwoeMsg);
-      else if(isLeader())
-        node.sendToSynchronizer(m);
-        //node.sendTo(mwoeMsg.sender, new MergeMsg());
+      node.sendTo(parent, mwoeMsg);
+      //node.sendTo(mwoeMsg.sender, new MergeMsg());
     }
     
     private void handleRejectMsg(RejectMsg m){
@@ -88,6 +85,10 @@ public class GHS {
         leader = m.newLeader;
         broadcast(m);
         resetCCfromNbrs();
+        if(isLeader())
+          parent = -1;  // "parent" is now synchronizer
+        else
+          parent = ;    // TO-DO: compute new parents
       }
     }
     

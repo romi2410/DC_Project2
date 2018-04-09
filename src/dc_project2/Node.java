@@ -120,24 +120,14 @@ class Node{
     // Update message being sent to neighbor
     public void sendTo(int rcvrUid, Message newMsg){
       newMsg.sender = uid;
-      String prevMsg = neighbors2lastsent.get(rcvrUid);  // use prevMsg if newMsg serialization fails
-      neighbors2lastsent.put(rcvrUid, serialize(newMsg, prevMsg));
-    }
-    public void sendToSynchronizer(Message newMsg){
-      newMsg.sender = uid;
-      String prevMsg = sendToSynchronizer;  // use prevMsg if newMsg serialization fails
-      sendToSynchronizer = serialize(newMsg, prevMsg);
-    }
-    private String serialize(Message msg, String defaultStr){
-      ByteArrayOutputStream bo = new ByteArrayOutputStream();
-      try {
-          ObjectOutputStream so = new ObjectOutputStream(bo);
-          so.writeObject(msg);
-          so.flush();
-          return so.toString();
-      } catch (Exception e) {
+      try{
+        if(rcvrUid==-1) // -1 = synchronizer uid
+          sendToSynchronizer = newMsg.serialize();
+        else
+          neighbors2lastsent.put(rcvrUid, newMsg.serialize());
+      } catch (IOException e) {
           System.out.println(e);
-          return defaultStr;
+          System.out.println("Attempt to serialize " + newMsg.toString() + " failed");
       }
     }
 
