@@ -44,6 +44,8 @@ public class GHS {
           handleRejectMsg((RejectMsg) msg);
       if(msgType == NewLeaderMsg.class)
           handleNewLeaderMsg((NewLeaderMsg) msg);
+      if(msgType == TerminateMsg.class)
+          terminate();
     }
     
     private void handleSearchMsg(SearchMsg m){
