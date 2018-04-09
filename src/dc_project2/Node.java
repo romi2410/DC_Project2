@@ -128,7 +128,7 @@ class Node{
       String prevMsg = sendToSynchronizer;  // use prevMsg if newMsg serialization fails
       sendToSynchronizer = serialize(newMsg, prevMsg);
     }
-    private String serialize(Object msg, String defaultStr){
+    private String serialize(Message msg, String defaultStr){
       ByteArrayOutputStream bo = new ByteArrayOutputStream();
       try {
           ObjectOutputStream so = new ObjectOutputStream(bo);

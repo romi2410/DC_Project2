@@ -3,7 +3,7 @@ import java.util.StringJoiner;
 import java.lang.reflect.Field;
 
 // Convergecast
-public class MWOEMsg extends Message implements java.io.Serializable, Comparable<MWOEMsg>{
+public class MWOEMsg extends Message implements Comparable<MWOEMsg>{
     int leader1;
     int leader2;
     int leafnode;
@@ -38,14 +38,5 @@ public class MWOEMsg extends Message implements java.io.Serializable, Comparable
           return smallLeaderComparison;
         }
       }
-    }
-
-    @Override
-    public String toString(){
-        StringJoiner sj = new StringJoiner(" ");
-        sj.add("MWOEMsg");
-        for(Field field: this.getClass().getDeclaredFields())
-          sj.add(field.toString());
-        return sj.toString();
     }
 }
