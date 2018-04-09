@@ -27,7 +27,7 @@ public class GHS {
         this.node = node;
         resetCCfromNbrs();
         for (int uid: node.neighbors())
-          node.sendTo(uid, new SearchMsg(level, leader, node.uid).toString());
+          node.sendTo(uid, new SearchMsg(level, leader, node.uid));
     }
     
     private void resetCCfromNbrs(){
@@ -76,36 +76,6 @@ public class GHS {
         node.sendToSynchronizer(m);
         //node.sendTo(mwoeMsg.sender, new MergeMsg());
     }
-    private void merge(MWOEMsg mwoeMsg){
-      int newLeader = Math.max(mwoeMsg.externalNode, mwoeMsg.leafnode);
-      NewLeaderMsg newLeaderMsg = new NewLeaderMsg(level+1, newLeader, mwoeMsg.leader1, mwoeMsg.leader2, node.uid);
-      node.sendTo(mwoeMsg.sender, newLeaderMsg);
-      level++;
-      leader = newLeader;
-      parent = mwoeMsg.sender;
-    }
-    
-    private void handleMergeMsg(MergeMsg m){
-      if(node.uid!=m.leafNode)
-        node.sentTo(m.path.next);
-      else if(node.uid==m.leafNode){
-        requestAbsorb(m.externalNode); //will add node.uid to m.externalNode's tree neighbors
-        boolean inBroadcast = checkStatus(m.externalNode);
-        if(inBroadcast){        // Case1
-          
-        }
-        else if(!inBroadcast){  // Case2
-          if(mwoeMsg.level==level)          // MERGE
-            merge(mwoeMsg);
-          else if(level < mwoeMsg.level){   // ABSORB
-            level = Math.max(level, mwoeMsg.level);
-            // INCOMPLETE
-          }
-          else if(level > mwoeMsg.level)
-            System.out.println("Unexpected case: level > mwoeMsg.level");
-        }
-      }
-    }
     
     private void handleRejectMsg(RejectMsg m){
       ccFromNbr.put(m.sender, true);
@@ -121,20 +91,9 @@ public class GHS {
       }
     }
     
-    private void broadcast(Object msg){
+    private void broadcast(Message msg){
       for(int nbr: node.neighbors())
         node.sendTo(nbr, msg);
-    }
-    
-    // returns uid of smaller
-    private int compare(double w_a, int u_a,
-                        double w_b, int u_b){
-      if(w_a<w_b)
-        return u_a;
-      else if(w_a>w_b)
-        return u_b;
-      else
-        return Math.min(u_a, u_b);
     }
     
     public boolean isLeader(){
