@@ -4,6 +4,7 @@ import java.util.Scanner;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
 
 public class DC_Project2 {
   
@@ -39,6 +40,15 @@ public class DC_Project2 {
         {
             System.out.println("File " + args[0] + " not found");
             System.exit(0);
+        }
+        
+        while(true){
+          System.out.println("Number of threads: " + Thread.activeCount());
+          try{
+            TimeUnit.SECONDS.sleep(2);
+          } catch(InterruptedException e){
+            System.out.println(e);
+          }
         }
     }
   
