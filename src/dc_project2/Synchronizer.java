@@ -84,7 +84,10 @@ public class Synchronizer {
     HashMap<Integer, HashSet> leaders2componentNew = new HashMap<Integer, HashSet>();
     for(int leaderFrom: wantsToMergeWith.keySet()){
       int leaderTo = wantsToMergeWith.get(leaderFrom);
-      leaders2componentNew.put(leaderTo, merge(leaderTo, leaderFrom));
+      if(leaders2componentNew.keySet().has(leaderTo))
+        leaders2componentNew.get(leaderTo).addall(leaders2component.get(leaderFrom));
+      else
+        leaders2componentNew.put(leaderTo, leaders2component.get(leaderFrom));
     }
     leaders2component = leaders2componentNew;   level++;  //update leaders2component and level
     wantsToMergeWith = new HashMap<Integer, Integer>();   //reset wantsToMergeWith
@@ -99,11 +102,6 @@ public class Synchronizer {
     for(int leaderFrom2: wantsToMergeWith.keySet())   //everyone who wanted to merge with smallLeader,
       if(wantsToMergeWith.get(leaderFrom2).equals(smallLeader)) //will now merge with bigLeader.
         wantsToMergeWith.put(leaderFrom2, bigLeader);
-  }
-  private HashSet<Integer> merge(int leader1, int leader2){
-    HashSet mergedSet = new HashSet(leaders2component.get(leader1));
-    mergedSet.addAll(leaders2component.get(leader2));
-    return mergedSet;
   }
   private void terminate(){
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
