@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 // keeps track of all leaders, and what nodes belong to those leaders
   // Hashmap: leaders -> component set
@@ -128,8 +129,9 @@ public class Synchronizer {
     startSender(nodeHostname, nodePort, nodeUID);
     numEdges++;
   }
-  private BufferedWriter startSender(String nodeHostname, int nodePort, int nodeUID){
-        while(true) try {
+  private void startSender(String nodeHostname, int nodePort, int nodeUID){
+        boolean successfullyConnected = false;
+        while(!successfullyConnected) try {
             Socket s = new Socket(nodeHostname, nodePort);
             System.out.println("Synchronizer is connecting to " + nodePort);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
@@ -142,9 +144,16 @@ public class Synchronizer {
                   }
                 }
             }).start();
-            return out;
+            successfullyConnected = true;
         } catch (UnknownHostException e){ e.printStackTrace();
         } catch (IOException e)         { e.printStackTrace();
+        }
+        
+        System.out.println("Number of threads after starting edge " + uid + ", " + nodeUID + ": " + Thread.activeCount());
+        try{
+          TimeUnit.SECONDS.sleep(1);
+        } catch(InterruptedException e){
+          System.out.println(e);
         }
     }
   

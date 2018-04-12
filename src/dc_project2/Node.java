@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 class Node{
     // node stuff
@@ -88,6 +89,13 @@ class Node{
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+        
+        System.out.println("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + Thread.activeCount());
+        try{
+          TimeUnit.SECONDS.sleep(1);
+        } catch(InterruptedException e){
+          System.out.println(e);
         }
     }
     public void connectToSynchronizer(String syncHostname, int syncPort){
