@@ -21,6 +21,7 @@ public class Synchronizer {
   int level = 0;
   HashMap<Integer, Integer> wantsToMergeWith  = new HashMap<Integer, Integer>();
   HashMap<Integer, HashSet> leaders2component = new HashMap<Integer, HashSet>();
+  HashMap<Integer, MWOEMsg> leaders2MWOE = new HashMap<Integer, MWOEMsg>();
   
   String hostname;
   int port;
@@ -30,15 +31,19 @@ public class Synchronizer {
   boolean server = false;
   int numEdges = 0;
 
-  public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
-    for(int uid: nodes.keySet()){
+  public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port, boolean test){
+    for(int nodeUID: nodes.keySet()){
       HashSet<Node> component = new HashSet<Node>();
-      component.add(nodes.get(uid));
-      leaders2component.put(uid, component);
+      component.add(nodes.get(nodeUID));
+      leaders2component.put(nodeUID, component);
+      sendTo.put(nodeUID, " ");
     }
+    this.hostname = (test) ? "localhost" : hostname;
+    this.port = port;
     startServer();
-    for(Node node: nodes.values())
-      startSender(node.hostname, node.port, node.uid);
+    System.out.println("Synchronizer started");
+//    for(Node node: nodes.values())
+//      startSender(node.hostname, node.port, node.uid);
   }
   
   private void startServer(){
@@ -71,7 +76,8 @@ public class Synchronizer {
         }).start();
   }
   public void handleMsg(MWOEMsg m){
-    wantsToMergeWith.put(m.sender, m.mergeWithLeader);
+    wantsToMergeWith.put(m.sender, m.externalLeader);
+    leaders2MWOE.put(m.sender, m);
     if(wantsToMergeWith.size() == leaders2component.size())
       mergePhase();
   }
@@ -79,30 +85,34 @@ public class Synchronizer {
     for(int leaderFrom: wantsToMergeWith.keySet()){
       int leaderTo = wantsToMergeWith.get(leaderFrom);
       if(wantsToMergeWith.get(leaderTo).equals(leaderFrom))
-        resolveMutualMerge(leaderFrom, leaderTo);
+        resolveMutualMerge(leaderFrom, leaderTo, leaders2MWOE.get(leaderFrom));
     }
     HashMap<Integer, HashSet> leaders2componentNew = new HashMap<Integer, HashSet>();
     for(int leaderFrom: wantsToMergeWith.keySet()){
       int leaderTo = wantsToMergeWith.get(leaderFrom);
-      if(leaders2componentNew.keySet().has(leaderTo))
-        leaders2componentNew.get(leaderTo).addall(leaders2component.get(leaderFrom));
+      if(leaders2componentNew.keySet().contains(leaderTo))
+        leaders2componentNew.get(leaderTo).addAll(leaders2component.get(leaderFrom));
       else
         leaders2componentNew.put(leaderTo, leaders2component.get(leaderFrom));
     }
     leaders2component = leaders2componentNew;   level++;  //update leaders2component and level
+    for(int oldLeader: leaders2component.keySet())
+      sendTo(oldLeader, new NewLeaderMsg(uid, wantsToMergeWith.get(oldLeader), leaders2MWOE.get(oldLeader)));
     wantsToMergeWith = new HashMap<Integer, Integer>();   //reset wantsToMergeWith
     if(leaders2component.size()==1)
       terminate();
   }
-  private void resolveMutualMerge(int leaderFrom, int leaderTo){
-    int bigLeader = Math.max(leaderFrom, leaderTo);
-    int smallLeader = Math.min(leaderFrom, leaderTo);
-    wantsToMergeWith.put(bigLeader, bigLeader);       //bigLeader points to itself.
+  
+  private void resolveMutualMerge(int leaderFrom, int leaderTo, MWOEMsg m){
+    int newLeader = Math.max(m.externalNode, m.leafnode); // incident to core edge
     
+    wantsToMergeWith.put(leaderFrom, newLeader);
+    wantsToMergeWith.put(leaderTo, newLeader);
     for(int leaderFrom2: wantsToMergeWith.keySet())   //everyone who wanted to merge with smallLeader,
-      if(wantsToMergeWith.get(leaderFrom2).equals(smallLeader)) //will now merge with bigLeader.
-        wantsToMergeWith.put(leaderFrom2, bigLeader);
+      if(wantsToMergeWith.get(leaderFrom2).equals(leaderFrom) || wantsToMergeWith.get(leaderFrom2).equals(leaderTo)) //will now merge with newLeader
+        wantsToMergeWith.put(leaderFrom2, newLeader);
   }
+  
   private void terminate(){
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
     for(Integer node: sendTo.keySet())
@@ -116,12 +126,12 @@ public class Synchronizer {
   }
   private void connectTo(String nodeHostname, int nodePort, int nodeUID){
     startSender(nodeHostname, nodePort, nodeUID);
-    sendTo.put(nodeUID, "");
     numEdges++;
   }
   private BufferedWriter startSender(String nodeHostname, int nodePort, int nodeUID){
         while(true) try {
             Socket s = new Socket(nodeHostname, nodePort);
+            System.out.println("Synchronizer is connecting to " + nodePort);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             (new Thread() {
                 @Override

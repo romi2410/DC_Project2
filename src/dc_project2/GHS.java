@@ -61,12 +61,13 @@ public class GHS {
         for(int nbr: node.neighbors())
           node.sendTo(nbr, new SearchMsg(leader, node.uid));
       }
-      else if(m.sender != parent)
-        node.sendTo(m.sender, new RejectMsg(node.uid));
+          else if(m.sender != parent)
+            node.sendTo(m.sender, new RejectMsg(node.uid));
     }
     
     private void handleMWOEMsg(MWOEMsg m){
       ccFromNbr.put(m.sender, true);
+      m.appendToPath(m.sender);
       if(mwoeMsg.compareTo(m)<0)  // update MWOE if new one greater
         mwoeMsg = m;
       
@@ -81,14 +82,11 @@ public class GHS {
     }
     
     private void handleNewLeaderMsg(NewLeaderMsg m){
-      if(leader==m.oldLeader1 || leader==m.oldLeader2){
+      if(treeNbrs.contains(m.sender)){
         leader = m.newLeader;
+        parent = m.sender;
         broadcast(m);
         resetCCfromNbrs();
-        if(isLeader())
-          parent = -1;  // "parent" is now synchronizer
-        else
-          parent = ;    // TO-DO: compute new parents
       }
     }
     

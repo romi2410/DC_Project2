@@ -10,6 +10,7 @@ public class ClientManagerSynchronizer implements Runnable {
     public ClientManagerSynchronizer(Socket client, Synchronizer sync) {
       this.client = client;
       this.sync = sync;
+      System.out.println(sync.uid + " is connected to " + client.toString());
     }
 
     public ClientManagerSynchronizer(Socket client) {

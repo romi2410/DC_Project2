@@ -9,8 +9,9 @@ public class ClientManager implements Runnable {
     Node owner;
 
     public ClientManager(Socket client, Node owner) {
-	this.client = client;
-        this.owner = owner;
+      this.client = client;
+      this.owner = owner;
+      System.out.println(owner.uid + " is connected to " + client.toString());
     }
 
     public ClientManager(Socket client) {
@@ -21,11 +22,10 @@ public class ClientManager implements Runnable {
     public void run() {
       try {
             String line;
-            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(client.getInputStream()));
             
-            while ((line = in.readLine()) != null){
-                handleMsg(line);
-            }
+            while ((line = in.readLine()) != null){ handleMsg(line); }
 	} catch(IOException e) {
             e.printStackTrace();
       }

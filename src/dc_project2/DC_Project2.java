@@ -4,16 +4,12 @@ import java.util.Scanner;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DC_Project2 {
   
   static boolean test = false;
-  //static Logger logger = LoggerFactory.getLogger(DC_Project2.class);
 
   public static void main(String[] args) throws IOException {
-        //logger.info("Hello World");
         
         if(args.length>=2 && args[1].equalsIgnoreCase("test"))
         {
@@ -131,7 +127,8 @@ public class DC_Project2 {
       int s_port = 0;                                                             
       for(Node node: nodes.values())
         s_port = Math.max(s_port, (node.port+1) % 65535);
-      return new Synchronizer(nodes, s_hostname, s_port);
+      return new Synchronizer(nodes, s_hostname, s_port, test);
+      //return new Synchronizer(nodes, "localhost", 10000);
     }
   
 }

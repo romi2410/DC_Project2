@@ -51,7 +51,7 @@ class Node{
                         ClientManager w = new ClientManager(s, t);
                         Thread t = new Thread(w);
                         t.start();
-                        successfullyConnected = true;
+                        //successfullyConnected = true;
                     } catch(IOException e) {
                         System.out.println("accept failed");
                         System.exit(100);
@@ -63,14 +63,16 @@ class Node{
         }).start();
     }
     public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
+      neighbors2lastsent.put(nbrUID, "");
       startSender(nbrport, nbrhostname, nbrUID);
       neighbors2weights.put(nbrUID, w);
-      neighbors2lastsent.put(nbrUID, "");
       numEdges++;
     }
     private void startSender(int nbrport, String nbrhostname, int nbrUID) {
-        while(true) try {
+        boolean successfullyConnected = false;
+        while(!successfullyConnected) try {
             Socket s = new Socket(nbrhostname, nbrport);
+            System.out.println(uid + " is connecting to " + nbrport);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             (new Thread() {
                 @Override
@@ -81,6 +83,7 @@ class Node{
                   }
                 }
             }).start();
+            successfullyConnected = true;
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -88,8 +91,10 @@ class Node{
         }
     }
     public void connectToSynchronizer(String syncHostname, int syncPort){
-        while(true) try {
+        boolean successfullyConnected = false;
+        while(!successfullyConnected) try {
             Socket s = new Socket(syncHostname, syncPort);
+            System.out.println(uid + " is connecting to " + syncPort);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             (new Thread() {
                 @Override
@@ -99,6 +104,7 @@ class Node{
                     catch(IOException e)  { e.printStackTrace(); }
                 }
             }).start();
+            successfullyConnected = true;
             numEdges++;
         } catch (UnknownHostException e)  { e.printStackTrace();
         } catch (IOException e)           { e.printStackTrace();
