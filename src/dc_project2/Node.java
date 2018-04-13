@@ -29,8 +29,8 @@ class Node{
     int numEdges = 0;
     
     
-    public Node(int u, String hn, int p, boolean test) {
-        uid = u;  port = p;   hostname = (test) ? "localhost" : hn;
+    public Node(int u, String hn, int p) {
+        uid = u;  port = p;   hostname = (TestingMode.isOn()) ? "localhost" : hn;
         System.out.println("Node " + uid + " started");
         startServer();
     }

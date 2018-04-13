@@ -32,14 +32,14 @@ public class Synchronizer {
   boolean server = false;
   int numEdges = 0;
 
-  public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port, boolean test){
+  public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
     for(int nodeUID: nodes.keySet()){
       HashSet<Node> component = new HashSet<Node>();
       component.add(nodes.get(nodeUID));
       leaders2component.put(nodeUID, component);
       sendTo.put(nodeUID, " ");
     }
-    this.hostname = (test) ? "localhost" : hostname;
+    this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
     startServer();
     System.out.println("Synchronizer started");
