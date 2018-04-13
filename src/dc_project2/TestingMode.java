@@ -5,9 +5,14 @@ package dc_project2;
       and print additional logging messages
 */
 public class TestingMode {
-  static boolean        test = false;
   
-  public static void    turnOn(){ test = true;  
-                                  System.out.println("Running in test (host will be localhost)"); }
-  public static boolean isOn()  { return test;  }
+  private static boolean  test = false;
+  
+  public static void      turnOn()        { test = true;
+                                            print("Running in test (host will be localhost)");  }
+  public static boolean   isOn()          { return      test;                                   }
+  
+  public static void      print(String s) { if(isOn())  System.out.println(s);                  }
+  public static int       threadCount()   { return      Thread.activeCount();                   }
+  
 }

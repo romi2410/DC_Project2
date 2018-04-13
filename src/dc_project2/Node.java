@@ -30,8 +30,8 @@ class Node{
     
     
     public Node(int u, String hn, int p) {
-        uid = u;  port = p;   hostname = (TestingMode.isOn()) ? "localhost" : hn;
-        System.out.println("Node " + uid + " started");
+        uid = u;  port = p;
+        hostname = (TestingMode.isOn()) ? "localhost" : hn;
         startServer();
     }
     private void startServer() {
@@ -73,7 +73,6 @@ class Node{
         boolean successfullyConnected = false;
         while(!successfullyConnected) try {
             Socket s = new Socket(nbrhostname, nbrport);
-            System.out.println(uid + " is connecting to " + nbrport);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             (new Thread() {
                 @Override
@@ -91,7 +90,7 @@ class Node{
             e.printStackTrace();
         }
         
-        System.out.println("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + Thread.activeCount());
+        TestingMode.print("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + TestingMode.threadCount());
         try{
           TimeUnit.SECONDS.sleep(1);
         } catch(InterruptedException e){
@@ -102,7 +101,6 @@ class Node{
         boolean successfullyConnected = false;
         while(!successfullyConnected) try {
             Socket s = new Socket(syncHostname, syncPort);
-            System.out.println(uid + " is connecting to " + syncPort);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             (new Thread() {
                 @Override

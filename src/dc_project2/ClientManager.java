@@ -11,21 +11,20 @@ public class ClientManager implements Runnable {
     public ClientManager(Socket client, Node owner) {
       this.client = client;
       this.owner = owner;
-      System.out.println(owner.uid + " is connected to " + client.toString());
     }
 
     public ClientManager(Socket client) {
-	this.client = client;
+      this.client = client;
     }
 
     @Override
     public void run() {
       try {
-            String line;
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(client.getInputStream()));
-            
-            while ((line = in.readLine()) != null){ handleMsg(line); }
+        String line;
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(client.getInputStream()));
+
+        while ((line = in.readLine()) != null){ handleMsg(line); }
 	} catch(IOException e) {
             e.printStackTrace();
       }

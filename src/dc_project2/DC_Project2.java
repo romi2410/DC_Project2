@@ -8,6 +8,10 @@ import java.util.concurrent.TimeUnit;
 
 public class DC_Project2 {
 
+  static HashMap<Integer, Node> nodes;
+  static Synchronizer synchronizer;
+  static Scanner sc;
+          
   public static void main(String[] args) throws IOException {
     
     if(args.length>=2 && args[1].equalsIgnoreCase("test"))
@@ -15,19 +19,9 @@ public class DC_Project2 {
 
     try
     {
-      Scanner sc = new Scanner(new File(args[0]));
-
-      int numNodes = readNumNodes(sc);
-      HashMap<Integer, Node> nodes = readAndCreateNodes(sc, numNodes);
-      Synchronizer s = initSynchronizer(nodes);
-      while(serversStillStarting(nodes, numNodes, s)){}
-
-      int numEdges = readAndCreateEdges(sc, nodes) + 2*numNodes;  //2*numNodes = # edges between nodes and synchronizer
-      s.connectToNodes(new HashSet<>(nodes.values()));
-      for(Node node: nodes.values())
-          node.connectToSynchronizer(s.hostname, s.port);
-      while(socketsStillStarting(nodes, numEdges, s)){}
-
+      sc = new Scanner(new File(args[0]));
+      int numNodes = startServers();
+      startSenders(numNodes);
       for(Node node: nodes.values())
           node.initGHS();
     }
@@ -37,20 +31,43 @@ public class DC_Project2 {
       System.exit(0);
     }
 
-    while(true){
-      System.out.println("Number of threads: " + Thread.activeCount());
-      try{
-        TimeUnit.SECONDS.sleep(2);
-      } catch(InterruptedException e){
-        System.out.println(e);
-      }
+    //while(true){
+    System.out.println("Number of threads: " + Thread.activeCount());
+    try{
+      TimeUnit.SECONDS.sleep(2);
+    } catch(InterruptedException e){
+      System.out.println(e);
     }
+    //}
   }
   
+  public static int startServers(){
+    int numNodes = readNumNodes();
+    nodes = initNodes(numNodes);
+    TestingMode.print("Starting nodes");
+    synchronizer = initSynchronizer(nodes);
+    TestingMode.print("Starting synchronizer");
+    while(serversStillStarting(nodes, numNodes, synchronizer)){
+      // nop
+    }
+    TestingMode.print("Started all servers");
+    return numNodes;
+  }
+  public static void startSenders(int numNodes){
+    TestingMode.print("Starting node->node senders");
+    int numEdges = initEdges(nodes) + 2*numNodes;  //2*numNodes = # edges between nodes and synchronizer
+    TestingMode.print("Starting synchronizer->node senders");
+    synchronizer.connectToNodes(new HashSet<Node>(nodes.values()));
+    TestingMode.print("Starting node->synchronizer senders");
+    for(Node node: nodes.values())
+        node.connectToSynchronizer(synchronizer.hostname, synchronizer.port);
+    while(socketsStillStarting(nodes, numEdges, synchronizer)){
+      // nop
+    }
+    TestingMode.print("Started all senders");
+  }
   
-  
-  
-    public static int readNumNodes(Scanner sc){
+    public static int readNumNodes(){
       int numNodes = 0;
       while(numNodes==0)
       {
@@ -61,26 +78,20 @@ public class DC_Project2 {
       return numNodes;
     }
     
-    public static Node parseLine_Node(String[] nodeParams){
-      String uid = nodeParams[0];
-      String hostname = nodeParams[1];
-      String port = nodeParams[2];
-      return new Node(Integer.parseInt(uid), hostname, Integer.parseInt(port));
-    }
-    
-    public static HashMap<Integer, Node> readAndCreateNodes(Scanner sc, int numNodes){
+    public static HashMap<Integer, Node> initNodes(int numNodes){
       HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
-      for(int i=0; i < numNodes; i++)
-      {
+      int nodesInitialized = 0;
+      while(nodesInitialized < numNodes){
         String line = sc.nextLine();
         if(!(line.startsWith("#") || line.trim().length() == 0))
         {
           String[] params = line.trim().split("\\s+");
-          Node node = parseLine_Node(params);
-          nodes.put(node.uid, node);
+          int uid = Integer.parseInt(params[0]);
+          String hostname = params[1];
+          int port = Integer.parseInt(params[2]);
+          nodes.put(uid, new Node(uid, hostname, port));
+          nodesInitialized++;
         }
-        else
-          i--;
       }
       return nodes;
     }
@@ -94,7 +105,7 @@ public class DC_Project2 {
     }
     
     // returns number of edges
-    public static int readAndCreateEdges(Scanner sc, HashMap<Integer, Node> nodes){
+    public static int initEdges(HashMap<Integer, Node> nodes){
       int numEdges = 0;
       while(sc.hasNext())
         {
@@ -133,7 +144,6 @@ public class DC_Project2 {
       for(Node node: nodes.values())
         s_port = Math.max(s_port, (node.port+1) % 65535);
       return new Synchronizer(nodes, s_hostname, s_port);
-      //return new Synchronizer(nodes, "localhost", 10000);
     }
   
 }

@@ -42,9 +42,6 @@ public class Synchronizer {
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
     startServer();
-    System.out.println("Synchronizer started");
-//    for(Node node: nodes.values())
-//      startSender(node.hostname, node.port, node.uid);
   }
   
   private void startServer(){
@@ -133,7 +130,6 @@ public class Synchronizer {
         boolean successfullyConnected = false;
         while(!successfullyConnected) try {
             Socket s = new Socket(nodeHostname, nodePort);
-            System.out.println("Synchronizer is connecting to " + nodePort);
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
             (new Thread() {
                 @Override
@@ -149,7 +145,7 @@ public class Synchronizer {
         } catch (IOException e)         { e.printStackTrace();
         }
         
-        System.out.println("Number of threads after starting edge " + uid + ", " + nodeUID + ": " + Thread.activeCount());
+        TestingMode.print("Number of threads after starting edge " + uid + ", " + nodeUID + ": " + TestingMode.threadCount());
         try{
           TimeUnit.SECONDS.sleep(1);
         } catch(InterruptedException e){
