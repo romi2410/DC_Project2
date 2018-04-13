@@ -7,126 +7,132 @@ import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 public class DC_Project2 {
-  
-  static boolean test = false;
 
+  static HashMap<Integer, Node> nodes;
+  static Synchronizer synchronizer;
+  static Scanner sc;
+          
   public static void main(String[] args) throws IOException {
-        
-        if(args.length>=2 && args[1].equalsIgnoreCase("test"))
-        {
-            test = true;
-            System.out.println("Running in test (host will be localhost)");
-        }
-        
-        try
-        {
-            Scanner sc = new Scanner(new File(args[0]));
-            
-            int numNodes = readNumNodes(sc);
-            HashMap<Integer, Node> nodes = readAndCreateNodes(sc, numNodes);
-            Synchronizer s = initSynchronizer(nodes);
-            while(serversStillStarting(nodes, numNodes, s)){}
-            
-            int numEdges = readAndCreateEdges(sc, nodes) + 2*numNodes;  //2*numNodes = # edges between nodes and synchronizer
-            s.connectToNodes(new HashSet<>(nodes.values()));
-            for(Node node: nodes.values())
-                node.connectToSynchronizer(s.hostname, s.port);
-            while(socketsStillStarting(nodes, numEdges, s)){}
-            
-            for(Node node: nodes.values())
-                node.initGHS();
-        }
-        catch(IOException e)
-        {
-            System.out.println("File " + args[0] + " not found");
-            System.exit(0);
-        }
-        
-        while(true){
-          System.out.println("Number of threads: " + Thread.activeCount());
-          try{
-            TimeUnit.SECONDS.sleep(2);
-          } catch(InterruptedException e){
-            System.out.println(e);
-          }
-        }
+    
+    if(args.length>=2 && args[1].equalsIgnoreCase("test"))
+      TestingMode.turnOn();
+
+    try
+    {
+      sc = new Scanner(new File(args[0]));
+      int numNodes = startServers();
+      startSenders(numNodes);
+      for(Node node: nodes.values())
+          node.initGHS();
     }
+    catch(IOException e)
+    {
+      System.out.println("File " + args[0] + " not found");
+      System.exit(0);
+    }
+
+    //while(true){
+    System.out.println("Number of threads: " + Thread.activeCount());
+    try{
+      TimeUnit.SECONDS.sleep(2);
+    } catch(InterruptedException e){
+      System.out.println(e);
+    }
+    //}
+  }
   
+  public static int startServers(){
+    int numNodes = readNumNodes();
+    nodes = initNodes(numNodes);
+    TestingMode.print("Starting nodes");
+    synchronizer = initSynchronizer(nodes);
+    TestingMode.print("Starting synchronizer");
+    while(serversStillStarting(nodes, numNodes, synchronizer)){
+      // nop
+    }
+    TestingMode.print("Started all servers");
+    return numNodes;
+  }
+  public static void startSenders(int numNodes){
+    TestingMode.print("Starting node->node senders");
+    int numEdges = initEdges(nodes) + 2*numNodes;  //2*numNodes = # edges between nodes and synchronizer
+    TestingMode.print("Starting synchronizer->node senders");
+    synchronizer.connectToNodes(new HashSet<Node>(nodes.values()));
+    TestingMode.print("Starting node->synchronizer senders");
+    for(Node node: nodes.values())
+        node.connectToSynchronizer(synchronizer.hostname, synchronizer.port);
+    while(socketsStillStarting(nodes, numEdges, synchronizer)){
+      // nop
+    }
+    TestingMode.print("Started all senders");
+  }
   
-  
-  
-    public static int readNumNodes(Scanner sc){
+    public static int readNumNodes(){
       int numNodes = 0;
       while(numNodes==0)
-        {
-            String line = sc.nextLine();
-            if(!(line.startsWith("#") || line.trim().length() == 0))
-                numNodes = Integer.parseInt(line.trim());
-        }
+      {
+        String line = sc.nextLine();
+        if(!(line.startsWith("#") || line.trim().length() == 0))
+          numNodes = Integer.parseInt(line.trim());
+      }
       return numNodes;
     }
     
-    public static Node parseLine_Node(String[] nodeParams){
-        String uid = nodeParams[0];
-        String hostname = nodeParams[1];
-        String port = nodeParams[2];
-        return new Node(Integer.parseInt(uid), hostname, Integer.parseInt(port), test);
-    }
-    
-    public static HashMap<Integer, Node> readAndCreateNodes(Scanner sc, int numNodes){
-        HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
-        for(int i=0; i < numNodes; i++)
+    public static HashMap<Integer, Node> initNodes(int numNodes){
+      HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
+      int nodesInitialized = 0;
+      while(nodesInitialized < numNodes){
+        String line = sc.nextLine();
+        if(!(line.startsWith("#") || line.trim().length() == 0))
         {
-            String line = sc.nextLine();
-            if(!(line.startsWith("#") || line.trim().length() == 0))
-            {
-                String[] params = line.trim().split("\\s+");
-                Node node = parseLine_Node(params);
-                nodes.put(node.uid, node);
-            }
-            else
-                i--;
+          String[] params = line.trim().split("\\s+");
+          int uid = Integer.parseInt(params[0]);
+          String hostname = params[1];
+          int port = Integer.parseInt(params[2]);
+          nodes.put(uid, new Node(uid, hostname, port));
+          nodesInitialized++;
         }
-        return nodes;
+      }
+      return nodes;
     }
     
     public static boolean serversStillStarting(HashMap<Integer, Node> nodes, int numNodes, Synchronizer sync){
       HashSet<Integer> started = new HashSet<>();
       for(Node n: nodes.values())
-          if(n.server)
-              started.add(n.uid);
+        if(n.server)
+          started.add(n.uid);
       return (started.size() < numNodes) && sync.server;
     }
     
     // returns number of edges
-    public static int readAndCreateEdges(Scanner sc, HashMap<Integer, Node> nodes){
+    public static int initEdges(HashMap<Integer, Node> nodes){
       int numEdges = 0;
       while(sc.hasNext())
         {
-            String line = sc.nextLine();
-            
-            if(!(line.startsWith("#") || line.trim().length() == 0))
-            {
-                String[] params = line.trim().split("\\s+");
-                double w = Double.parseDouble(params[1]);
-                String[] tuple = params[0].substring(1, params[0].length()-1).split(",");
-                Node node1 = nodes.get(Integer.parseInt(tuple[0]));
-                Node node2 = nodes.get(Integer.parseInt(tuple[1]));
-                node1.connectTo(node2.hostname, node2.port, node2.uid, w);
-                node2.connectTo(node1.hostname, node1.port, node1.uid, w);
-                numEdges += 2;
-            }
+          String line = sc.nextLine();
+
+          if(!(line.startsWith("#") || line.trim().length() == 0))
+          {
+            String[] params = line.trim().split("\\s+");
+            double w = Double.parseDouble(params[1]);
+            String[] tuple = params[0].substring(1, params[0].length()-1).split(",");
+            Node node1 = nodes.get(Integer.parseInt(tuple[0]));
+            Node node2 = nodes.get(Integer.parseInt(tuple[1]));
+            node1.connectTo(node2.hostname, node2.port, node2.uid, w);
+            node2.connectTo(node1.hostname, node1.port, node1.uid, w);
+            numEdges += 2;
+          }
         }
       return numEdges;
     }
     
     public static boolean socketsStillStarting(HashMap<Integer, Node> nodes, int numEdges, Synchronizer sync){
-        int edgeCnt = 0;
-        edgeCnt = 0;
-        for(Node node: nodes.values())
-            edgeCnt += node.numEdges;
-        edgeCnt += sync.numEdges;
-        return edgeCnt < numEdges;
+      int edgeCnt = 0;
+      edgeCnt = 0;
+      for(Node node: nodes.values())
+        edgeCnt += node.numEdges;
+      edgeCnt += sync.numEdges;
+      return edgeCnt < numEdges;
     }
     
     // initializes the Synchronizer
@@ -137,8 +143,7 @@ public class DC_Project2 {
       int s_port = 0;                                                             
       for(Node node: nodes.values())
         s_port = Math.max(s_port, (node.port+1) % 65535);
-      return new Synchronizer(nodes, s_hostname, s_port, test);
-      //return new Synchronizer(nodes, "localhost", 10000);
+      return new Synchronizer(nodes, s_hostname, s_port);
     }
   
 }
