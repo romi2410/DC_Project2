@@ -85,7 +85,7 @@ public class GHS {
       if(treeNbrs.contains(m.sender)){
         leader = m.newLeader;
         parent = m.sender;
-        broadcast(m);
+        //broadcast(m);
         resetCCfromNbrs();
       }
     }

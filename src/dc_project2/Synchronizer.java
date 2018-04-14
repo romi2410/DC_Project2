@@ -74,14 +74,11 @@ public class Synchronizer {
       sendTo(node, terminateMsg);
   }
   
-  
   public void connectToNodes(Set<Node> nodes){
-    for(Node node: nodes)
-      connectTo(node.hostname, node.port, node.uid);
-  }
-  private void connectTo(String nodeHostname, int nodePort, int nodeUID){
-    startSender(nodeHostname, nodePort, nodeUID);
-    numEdges++;
+    for(Node node: nodes){
+      startSender(node.hostname, node.port, node.uid);
+      numEdges++;
+    }
   }
   private void startSender(String nodeHostname, int nodePort, int nodeUID){
         boolean successfullyConnected = false;
