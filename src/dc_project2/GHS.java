@@ -61,8 +61,8 @@ public class GHS {
         for(int nbr: node.neighbors())
           node.sendTo(nbr, new SearchMsg(leader, node.uid));
       }
-          else if(m.sender != parent)
-            node.sendTo(m.sender, new RejectMsg(node.uid));
+      else if(m.sender != parent)
+        node.sendTo(m.sender, new RejectMsg(node.uid));
     }
     
     private void handleMWOEMsg(MWOEMsg m){
@@ -72,7 +72,6 @@ public class GHS {
         mwoeMsg = m;
       
       node.sendTo(parent, mwoeMsg);
-      //node.sendTo(mwoeMsg.sender, new MergeMsg());
     }
     
     private void handleRejectMsg(RejectMsg m){

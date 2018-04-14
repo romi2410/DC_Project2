@@ -38,8 +38,7 @@ public class Synchronizer {
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
     startServer();
-    if(TestingMode.isOn())
-      startPrintThread();
+    if(TestingMode.isOn()) startPrintThread();
     System.out.println("Terminating Synchronizer constructor");
   }
   
@@ -53,7 +52,7 @@ public class Synchronizer {
   public void handleMsg(MWOEMsg m){
     LeaderToken sender = leaders.get(m.sender);
     sender.handleMWOEMsg(m);
-    if(allTrue(leaders.values(), LeaderToken.rcvdMsg())){
+    if(BooleanCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg())){
       leaders = new MergePhase(leaders).getLeaders();
       broadcastNewLeaders();
       level++;
@@ -79,10 +78,9 @@ public class Synchronizer {
   public void connectToNodes(Set<Node> nodes){
     for(Node node: nodes)
       senders.put(node.uid, new Sender(node.hostname, node.port, uid));
-    while(!allTrue(senders.values(), Sender.successfullyConnected())){Wait.aSec();}
+    while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.aSec();}
     sendersUp = true;
   }
-  private boolean allTrue(Collection c, Predicate p){ return c.stream().allMatch(p); }
   
   private void startPrintThread(){
     (new Thread() {
@@ -108,51 +106,6 @@ public class Synchronizer {
 
 
   /* --- HELPER CLASSES --- */
-
-class Sender{
-  String serializedMsg = " ";
-  int ownerUID;
-  boolean successfullyConnected = false;
-  public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
-  
-  Sender(String nodeHostname, int nodePort, int ownerUID){
-    this.ownerUID = ownerUID;
-    while(!successfullyConnected) try {
-      Socket s = new Socket(nodeHostname, nodePort);
-      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-      (new Thread() {
-          @Override
-          public void run() {
-            while(true){
-              try                 { out.write(serializedMsg); }
-              catch(IOException e){ e.printStackTrace(); }
-              Wait.aSec();
-            }
-          }
-      }).start();
-      successfullyConnected = true;
-    } catch (UnknownHostException e){ e.printStackTrace();
-    } catch (IOException e)         { e.printStackTrace();
-    }
-
-//    TestingMode.print("Number of threads after starting edge " + ownerUID + ", " + nodePort + ": " + TestingMode.threadCount());
-//    try{
-//      TimeUnit.SECONDS.sleep(1);
-//    } catch(InterruptedException e){
-//      System.out.println(e);
-//    }
-  }
-  
-  public void send(Message msg){
-    msg.sender = ownerUID;
-    try{
-      serializedMsg = msg.serialize();
-    } catch (IOException e) {
-      System.out.println(e);
-      System.out.println("Attempt to serialize " + msg.toString() + " failed");
-    }
-  }
-}
 
 
 class LeaderToken{

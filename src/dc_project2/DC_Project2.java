@@ -30,35 +30,22 @@ public class DC_Project2 {
       System.out.println("File " + args[0] + " not found");
       System.exit(0);
     }
-
-//    System.out.println("Number of threads: " + Thread.activeCount());
-//    try{
-//      TimeUnit.SECONDS.sleep(2);
-//    } catch(InterruptedException e){
-//      System.out.println(e);
-//    }
   }
   
   public static int startServers(){
     int numNodes = readNumNodes();
-    TestingMode.print("Starting nodes");
     nodes = initNodes(numNodes);
-    TestingMode.print("Starting synchronizer");
     synchronizer = initSynchronizer(nodes);
     haltUntilServersStarted(nodes, numNodes, synchronizer);
     TestingMode.print("Started all servers");
     return numNodes;
   }
   public static void startSenders(int numNodes){
-    TestingMode.print("Starting node->node senders");
-    int numEdges = initEdges(nodes);
-    TestingMode.print("Starting synchronizer->node senders");
+    initEdges(nodes);
     synchronizer.connectToNodes(new HashSet<Node>(nodes.values()));
-    TestingMode.print("Starting node->synchronizer senders");
     for(Node node: nodes.values())
         node.connectToSynchronizer(synchronizer.hostname, synchronizer.port);
-    haltUntilSendersStarted(nodes, numEdges, synchronizer);
-    TestingMode.print("Started all senders");
+    haltUntilSendersStarted(nodes, synchronizer);
   }
   
     public static int readNumNodes(){
@@ -73,6 +60,7 @@ public class DC_Project2 {
     }
     
     public static HashMap<Integer, Node> initNodes(int numNodes){
+      TestingMode.print("Starting nodes");
       HashMap<Integer, Node> nodes = new HashMap<Integer, Node>();
       int nodesInitialized = 0;
       while(nodesInitialized < numNodes){
@@ -95,7 +83,7 @@ public class DC_Project2 {
       while((nodesStarted.size() < numNodes) || !sync.serverUp){
         nodesStarted = new HashSet<Integer>();
         for(Node n: nodes.values())
-          if(n.server)
+          if(n.serverUp)
             nodesStarted.add(n.uid);
         TestingMode.print(nodesStarted.size() + "/" + numNodes + "\t" + sync.serverUp);
         Wait.aSec();
@@ -103,8 +91,8 @@ public class DC_Project2 {
     }
     
     // returns number of edges
-    public static int initEdges(HashMap<Integer, Node> nodes){
-      int numEdges = 0;
+    public static void initEdges(HashMap<Integer, Node> nodes){
+      TestingMode.print("Starting node->node senders");
       while(sc.hasNext())
         { String line = sc.nextLine();
           if(!(line.startsWith("#") || line.trim().length() == 0))
@@ -115,29 +103,21 @@ public class DC_Project2 {
             Node node2 = nodes.get(Integer.parseInt(tuple[1]));
             node1.connectTo(node2.hostname, node2.port, node2.uid, w);
             node2.connectTo(node1.hostname, node1.port, node1.uid, w);
-            numEdges += 2;
           }
         }
-      return numEdges;
     }
     
-    public static void haltUntilSendersStarted(HashMap<Integer, Node> nodes, int numEdges, Synchronizer sync){
-      int edgeCnt = 0;
-      while(edgeCnt<numEdges || !sync.sendersUp){
-        edgeCnt = 0;
-        for(Node node: nodes.values()){
-          TestingMode.print(node.uid + " has " + node.numEdges + " edges");
-          edgeCnt += node.numEdges;
-        }
-        TestingMode.print(edgeCnt + "/" + numEdges + "\t" + sync.sendersUp);
-        Wait.aSec();
-      }
+    public static void haltUntilSendersStarted(HashMap<Integer, Node> nodes, Synchronizer sync){
+      TestingMode.print("Checking if edges are created");
+      for(Node node: nodes.values())  { node.haltUntilSendersUp();  }
+      while(!sync.sendersUp)          { Wait.aSec();                }
     }
     
     // initializes the Synchronizer
       // with an arbitrary hostname from the config file
       // and one plus the largest port number from the config file
     public static Synchronizer initSynchronizer(HashMap<Integer, Node> nodes){
+      TestingMode.print("Starting synchronizer");
       String s_hostname = nodes.entrySet().iterator().next().getValue().hostname;
       int s_port = 0;                                                             
       for(Node node: nodes.values())
