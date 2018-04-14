@@ -27,14 +27,12 @@ public class Synchronizer {
   boolean server = false;   int numEdges = 0;   // use for synchronizing GHS start
   
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
-  HashMap<Integer, String> sendTo = new HashMap<>();
+  HashMap<Integer, Sender> senders = new HashMap<>();
   
 
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
-    for(int nodeUID: nodes.keySet()){
+    for(int nodeUID: nodes.keySet())
       leaders.put(nodeUID, new LeaderToken(nodeUID));
-      sendTo.put(nodeUID, " ");
-    }
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
     server = true;
@@ -60,15 +58,15 @@ public class Synchronizer {
   private void broadcastNewLeaders(){
     for(LeaderToken leader: leaders.values())
       for(int node: leader.component)
-        sendTo(node, new NewLeaderMsg(uid, leader.uid, leader.mwoe));
+        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe));
     for(LeaderToken leader: leaders.values())
       leader.resetRcvdMsg();
   }
   
   private void terminate(){
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
-    for(Integer node: sendTo.keySet())
-      sendTo(node, terminateMsg);
+    for(Integer node: senders.keySet())
+      senders.get(node).send(terminateMsg);
   }
   
   public void connectToNodes(Set<Node> nodes){
@@ -78,7 +76,18 @@ public class Synchronizer {
     }
   }
   private void startSender(String nodeHostname, int nodePort, int nodeUID){
+    senders.put(nodeUID, new Sender(nodeHostname, nodePort, uid));
+  }
+}
+
+
+class Sender{
+  String serializedMsg = " ";
+  int ownerUID;
+  
+  Sender(String nodeHostname, int nodePort, int ownerUID){
     boolean successfullyConnected = false;
+    this.ownerUID = ownerUID;
     while(!successfullyConnected) try {
         Socket s = new Socket(nodeHostname, nodePort);
         BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
@@ -86,7 +95,7 @@ public class Synchronizer {
             @Override
             public void run() {
               while(true){
-                try                 { out.write(sendTo.get(nodeUID)); }
+                try                 { out.write(serializedMsg); }
                 catch(IOException e){ e.printStackTrace(); }
               }
             }
@@ -96,7 +105,7 @@ public class Synchronizer {
       } catch (IOException e)         { e.printStackTrace();
     }
 
-    TestingMode.print("Number of threads after starting edge " + uid + ", " + nodeUID + ": " + TestingMode.threadCount());
+    TestingMode.print("Number of threads after starting edge " + ownerUID + ", " + nodePort + ": " + TestingMode.threadCount());
     try{
       TimeUnit.SECONDS.sleep(1);
     } catch(InterruptedException e){
@@ -104,16 +113,15 @@ public class Synchronizer {
     }
   }
   
-  // Update message being sent to neighbor
-  public void sendTo(int rcvrUid, Message newMsg){
-    newMsg.sender = uid;
+  public void send(Message msg){
+    msg.sender = ownerUID;
     try{
-      sendTo.put(rcvrUid, newMsg.serialize());
+      serializedMsg = msg.serialize();
     } catch (IOException e) {
       System.out.println(e);
-      System.out.println("Attempt to serialize " + newMsg.toString() + " failed");
+      System.out.println("Attempt to serialize " + msg.toString() + " failed");
     }
-  }  
+  }
 }
 
 
