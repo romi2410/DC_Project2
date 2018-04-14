@@ -55,7 +55,7 @@ public class Synchronizer {
   private void broadcastNewLeaders(){
     for(LeaderToken leader: leaders.values())
       for(int node: leader.component)
-        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe));
+        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe, leader.component));
     for(LeaderToken leader: leaders.values())
       leader.resetRcvdMsg();
   }

@@ -14,8 +14,8 @@ class Node{
   // neighbor stuff
   private HashMap<Integer, Double> weights  = new HashMap<>();
   private HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
-  public  Set<Integer>             neighbors()        { return senders.keySet(); }
-  public  double                   getWeight(int nbr) { return weights.get(nbr); }
+  public  Set<Integer>             neighbors()        { return senders.keySet();  }
+  public  double                   getWeight(int nbr) { return weights.get(nbr);  }
   private Sender                   senderToSynchronizer;
 
   // used by DC_Project2 for verification before initiating GHS
@@ -55,7 +55,7 @@ class Node{
     sb.add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port));
     sb.add("\tNeighbors:");
     for(int neighbor: weights.keySet())
-        sb.add(String.valueOf(neighbor)).add("\t");
+        sb.add(String.valueOf(neighbor));
     return sb.toString();
   }
 }

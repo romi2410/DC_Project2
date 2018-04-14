@@ -92,7 +92,6 @@ public class DC_Project2 {
     
     // returns number of edges
     public static void initEdges(HashMap<Integer, Node> nodes){
-      TestingMode.print("Starting node->node senders");
       while(sc.hasNext())
         { String line = sc.nextLine();
           if(!(line.startsWith("#") || line.trim().length() == 0))
@@ -108,7 +107,7 @@ public class DC_Project2 {
     }
     
     public static void haltUntilSendersStarted(HashMap<Integer, Node> nodes, Synchronizer sync){
-      TestingMode.print("Checking if edges are created");
+      TestingMode.print("Verifying that edges are created");
       for(Node node: nodes.values())  { node.haltUntilSendersUp();  }
       while(!sync.sendersUp)          { Wait.aSec();                }
     }
