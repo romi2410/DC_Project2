@@ -36,37 +36,40 @@ class Node{
     }
     public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
       neighbors2lastsent.put(nbrUID, "");
-      startSender(nbrport, nbrhostname, nbrUID);
       neighbors2weights.put(nbrUID, w);
+      boolean successfullyConnected = startSender(nbrport, nbrhostname, nbrUID);
+      while(!successfullyConnected){}
       numEdges++;
     }
-    private void startSender(int nbrport, String nbrhostname, int nbrUID) {
-        boolean successfullyConnected = false;
-        while(!successfullyConnected) try {
-            Socket s = new Socket(nbrhostname, nbrport);
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-            (new Thread() {
-                @Override
-                public void run() {
-                  while(true){
-                    try{out.write(neighbors2lastsent.get(nbrUID));}
-                    catch(IOException e){ e.printStackTrace(); }
-                  }
+    private boolean startSender(int nbrport, String nbrhostname, int nbrUID) {
+      boolean successfullyConnected = false;
+      while(!successfullyConnected) try {
+          Socket s = new Socket(nbrhostname, nbrport);
+          BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+          (new Thread() {
+              @Override
+              public void run() {
+                while(true){
+                  try{out.write(neighbors2lastsent.get(nbrUID));}
+                  catch(IOException e){ e.printStackTrace(); }
                 }
-            }).start();
-            successfullyConnected = true;
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
-        TestingMode.print("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + TestingMode.threadCount());
-        try{
-          TimeUnit.SECONDS.sleep(1);
-        } catch(InterruptedException e){
-          System.out.println(e);
-        }
+              }
+          }).start();
+          successfullyConnected = true;
+      } catch (UnknownHostException e) {
+          e.printStackTrace();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+
+      TestingMode.print("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + TestingMode.threadCount());
+      try{
+        TimeUnit.SECONDS.sleep(1);
+      } catch(InterruptedException e){
+        System.out.println(e);
+      }
+      
+      return successfullyConnected;
     }
     public void connectToSynchronizer(String syncHostname, int syncPort){
         boolean successfullyConnected = false;

@@ -5,29 +5,30 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-// keeps track of all leaders, and what nodes belong to those leaders
-  // Hashmap: leaders -> component set
-// does merging (broad/convergecast occurs at nodes/GHS)
-// 1 server socket, n sender sockets/threads
-  // sends new leader + new parent to every node, after receiving all merge requests from all leaders
-// handles termination (single leader in system)
+
+
 public class Synchronizer {
   
   int uid = -1;
   int level = 0;
   String hostname;
   int port;
-  boolean server = false;   int numEdges = 0;   // use for synchronizing GHS start
+  
+  // use for synchronizing GHS start
+  boolean serverUp = false;
+  boolean sendersUp = false;
   
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
-  HashMap<Integer, Sender> senders = new HashMap<>();
+  HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
   
 
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
@@ -35,24 +36,28 @@ public class Synchronizer {
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
-    server = true;
-    (new ServerThread(this, port)).start();
+    startServer();
+    if(TestingMode.isOn())
+      startPrintThread();
+  }
+  
+  private void startServer(){
+    ServerThread server = new ServerThread(this, port);
+    server.start();
+    while(!server.successfullyConnected){}
+    serverUp = true;
   }
   
   public void handleMsg(MWOEMsg m){
     LeaderToken sender = leaders.get(m.sender);
     sender.handleMWOEMsg(m);
-    if(rcvdAllMsgs()){
+    if(allTrue(leaders.values(), LeaderToken.rcvdMsg())){
       leaders = new MergePhase(leaders).getLeaders();
       broadcastNewLeaders();
       level++;
       if(leaders.size()==1)
         terminate();
     }
-  }
-  private boolean rcvdAllMsgs(){
-    Predicate<LeaderToken> rcvdMsg = leader -> leader.rcvdMsg;
-    return leaders.values().stream().allMatch(rcvdMsg);
   }
   
   private void broadcastNewLeaders(){
@@ -70,23 +75,48 @@ public class Synchronizer {
   }
   
   public void connectToNodes(Set<Node> nodes){
-    for(Node node: nodes){
-      startSender(node.hostname, node.port, node.uid);
-      numEdges++;
-    }
+    for(Node node: nodes)
+      senders.put(node.uid, new Sender(node.hostname, node.port, uid));
+    while(!allTrue(senders.values(), Sender.successfullyConnected())){}
+    sendersUp = true;
   }
-  private void startSender(String nodeHostname, int nodePort, int nodeUID){
-    senders.put(nodeUID, new Sender(nodeHostname, nodePort, uid));
+  private boolean allTrue(Collection c, Predicate p){ return c.stream().allMatch(p); }
+  
+  private void startPrintThread(){
+    (new Thread() {
+      @Override
+      public void run() {
+        while(true){
+          try{
+            Thread.sleep(10000);  // 10 seconds
+            printAll();
+          }catch(InterruptedException e){
+            System.out.println(e);
+          }
+        }
+      }
+    }).start();
+  }
+  private void printAll(){
+    for(LeaderToken leader: leaders.values())
+      System.out.println(leader.toString());
+    //for(Sender sender: senders.values())
+    //  System.out.println(sender.toString());
   }
 }
 
 
+
+
+  /* --- HELPER CLASSES --- */
+
 class Sender{
   String serializedMsg = " ";
   int ownerUID;
+  boolean successfullyConnected = false;
+  public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
   
   Sender(String nodeHostname, int nodePort, int ownerUID){
-    boolean successfullyConnected = false;
     this.ownerUID = ownerUID;
     while(!successfullyConnected) try {
         Socket s = new Socket(nodeHostname, nodePort);
@@ -130,6 +160,8 @@ class LeaderToken{
   HashSet<Integer> component = new HashSet<Integer>();
   MWOEMsg mwoe;
   boolean rcvdMsg = false;
+  public static Predicate<LeaderToken> rcvdMsg(){ return leader->leader.rcvdMsg; }
+  
   public LeaderToken(int uid){
     this.uid = uid;   component.add(uid);
   }
@@ -145,6 +177,17 @@ class LeaderToken{
   }
   public void resetRcvdMsg(){
     rcvdMsg = false;
+  }
+  @Override
+  public String toString(){
+    StringJoiner sj = new StringJoiner(" ");
+    sj.add(String.valueOf(uid)).add("wants to merge with").add(String.valueOf(wantsToMergeWith));
+    sj.add("and has <");
+    for (int node : component) 
+      sj.add(String.valueOf(node));
+    sj.add(">\t");
+    sj.add("its MWOEMsg is\t").add(mwoe.toString());
+    return sj.toString();
   }
 }
 

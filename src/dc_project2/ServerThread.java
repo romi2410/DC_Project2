@@ -11,6 +11,8 @@ import java.net.Socket;
 public class ServerThread extends Thread{
   Object t;
   int port;
+  boolean successfullyConnected = false;
+  
   ServerThread(Node t, int port){
     this.t = t;
     this.port = port;
@@ -22,7 +24,6 @@ public class ServerThread extends Thread{
   
   @Override
   public void run(){
-    boolean successfullyConnected = false;
     while(!successfullyConnected)
     try{
         ServerSocket ss = new ServerSocket(port);

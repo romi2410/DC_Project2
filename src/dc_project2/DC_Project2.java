@@ -55,7 +55,7 @@ public class DC_Project2 {
   }
   public static void startSenders(int numNodes){
     TestingMode.print("Starting node->node senders");
-    int numEdges = initEdges(nodes) + 2*numNodes;  //2*numNodes = # edges between nodes and synchronizer
+    int numEdges = initEdges(nodes);
     TestingMode.print("Starting synchronizer->node senders");
     synchronizer.connectToNodes(new HashSet<Node>(nodes.values()));
     TestingMode.print("Starting node->synchronizer senders");
@@ -101,7 +101,7 @@ public class DC_Project2 {
       for(Node n: nodes.values())
         if(n.server)
           started.add(n.uid);
-      return (started.size() < numNodes) && sync.server;
+      return (started.size() < numNodes) && sync.serverUp;
     }
     
     // returns number of edges
@@ -131,8 +131,7 @@ public class DC_Project2 {
       edgeCnt = 0;
       for(Node node: nodes.values())
         edgeCnt += node.numEdges;
-      edgeCnt += sync.numEdges;
-      return edgeCnt < numEdges;
+      return edgeCnt < numEdges && sync.sendersUp;
     }
     
     // initializes the Synchronizer
