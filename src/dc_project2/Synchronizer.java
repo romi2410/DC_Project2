@@ -37,13 +37,10 @@ public class Synchronizer {
     }
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
-    startServer();
-  }
-  
-  private void startServer(){
     server = true;
     (new ServerThread(this, port)).start();
   }
+  
   public void handleMsg(MWOEMsg m){
     LeaderToken sender = leaders.get(m.sender);
     sender.handleMWOEMsg(m);
@@ -81,42 +78,42 @@ public class Synchronizer {
     }
   }
   private void startSender(String nodeHostname, int nodePort, int nodeUID){
-        boolean successfullyConnected = false;
-        while(!successfullyConnected) try {
-            Socket s = new Socket(nodeHostname, nodePort);
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-            (new Thread() {
-                @Override
-                public void run() {
-                  while(true){
-                    try                 { out.write(sendTo.get(nodeUID)); }
-                    catch(IOException e){ e.printStackTrace(); }
-                  }
-                }
-            }).start();
-            successfullyConnected = true;
-        } catch (UnknownHostException e){ e.printStackTrace();
-        } catch (IOException e)         { e.printStackTrace();
-        }
-        
-        TestingMode.print("Number of threads after starting edge " + uid + ", " + nodeUID + ": " + TestingMode.threadCount());
-        try{
-          TimeUnit.SECONDS.sleep(1);
-        } catch(InterruptedException e){
-          System.out.println(e);
-        }
+    boolean successfullyConnected = false;
+    while(!successfullyConnected) try {
+        Socket s = new Socket(nodeHostname, nodePort);
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+        (new Thread() {
+            @Override
+            public void run() {
+              while(true){
+                try                 { out.write(sendTo.get(nodeUID)); }
+                catch(IOException e){ e.printStackTrace(); }
+              }
+            }
+        }).start();
+        successfullyConnected = true;
+      } catch (UnknownHostException e){ e.printStackTrace();
+      } catch (IOException e)         { e.printStackTrace();
     }
+
+    TestingMode.print("Number of threads after starting edge " + uid + ", " + nodeUID + ": " + TestingMode.threadCount());
+    try{
+      TimeUnit.SECONDS.sleep(1);
+    } catch(InterruptedException e){
+      System.out.println(e);
+    }
+  }
   
-    // Update message being sent to neighbor
-    public void sendTo(int rcvrUid, Message newMsg){
-      newMsg.sender = uid;
-      try{
-        sendTo.put(rcvrUid, newMsg.serialize());
-      } catch (IOException e) {
-          System.out.println(e);
-          System.out.println("Attempt to serialize " + newMsg.toString() + " failed");
-      }
-    }  
+  // Update message being sent to neighbor
+  public void sendTo(int rcvrUid, Message newMsg){
+    newMsg.sender = uid;
+    try{
+      sendTo.put(rcvrUid, newMsg.serialize());
+    } catch (IOException e) {
+      System.out.println(e);
+      System.out.println("Attempt to serialize " + newMsg.toString() + " failed");
+    }
+  }  
 }
 
 

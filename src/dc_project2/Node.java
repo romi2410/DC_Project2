@@ -3,7 +3,6 @@ package dc_project2;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -32,9 +31,6 @@ class Node{
     public Node(int u, String hn, int p) {
       uid = u;  port = p;
       hostname = (TestingMode.isOn()) ? "localhost" : hn;
-      startServer();
-    }
-    private void startServer() {
       server = true;        
       (new ServerThread(this, port)).start();
     }
