@@ -14,24 +14,25 @@ public class GHS {
     
     MWOEMsg mwoeMsg;
     
-    int leader;
     int parent = -1;  // parent of leader = -1 = synchronizer uid
+    int leader;
+    public boolean isLeader(){  return node.uid==leader;  }
     ArrayList<Integer> treeNbrs = new ArrayList<Integer>();
     
     Node node;
     
     public GHS(Node node)
-    {
-        leader = node.uid;
-        this.node = node;
-        resetCCfromNbrs();
-        for (int uid: node.neighbors())
-          node.sendTo(uid, new SearchMsg(leader, node.uid));
+    {   leader = node.uid;
+      this.node = node;
+      resetCCfromNbrs();
+      for (int uid: node.neighbors())
+        node.sendTo(uid, new SearchMsg(leader, node.uid));
+      if(TestingMode.isOn()) TestingMode.startPrintThread(this);
     }
     
     private void resetCCfromNbrs(){
       for (int uid: node.neighbors())
-          this.ccFromNbr.put(uid, false);
+        this.ccFromNbr.put(uid, false);
     }
     
     public void handleMsg(Object msg){
@@ -93,11 +94,7 @@ public class GHS {
       for(int nbr: node.neighbors())
         node.sendTo(nbr, msg);
     }
-    
-    public boolean isLeader(){
-      return node.uid==leader;
-    }
-    
+        
     private void terminate(){
       String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining("-"+node.uid+", "));
       System.out.println(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs);

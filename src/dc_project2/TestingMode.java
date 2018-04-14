@@ -14,5 +14,15 @@ public class TestingMode {
   
   public static void      print(String s) { if(isOn())  System.out.println(s);                  }
   public static int       threadCount()   { return      Thread.activeCount();                   }
-  
+  public static void      startPrintThread(Object t){
+    (new Thread() {
+      @Override
+      public void run() {
+        while(true){
+          Wait.thirtySeconds();
+          TestingMode.print(t.toString());
+        }
+      }
+    }).start();
+  }
 }

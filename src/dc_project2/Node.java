@@ -2,6 +2,7 @@ package dc_project2;
 
 import java.util.HashMap;
 import java.util.Set;
+import java.util.StringJoiner;
 
 class Node{
   // node stuff
@@ -11,10 +12,10 @@ class Node{
   GHS ghs;
 
   // neighbor stuff
-  private HashMap<Integer, Double> neighbors2weights  = new HashMap<>();
+  private HashMap<Integer, Double> weights  = new HashMap<>();
   private HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
-  public  Set<Integer>             neighbors()        { return neighbors2weights.keySet(); }
-  public  double                   getWeight(int nbr) { return neighbors2weights.get(nbr); }
+  public  Set<Integer>             neighbors()        { return senders.keySet(); }
+  public  double                   getWeight(int nbr) { return weights.get(nbr); }
   private Sender                   senderToSynchronizer;
 
   // used by DC_Project2 for verification before initiating GHS
@@ -29,17 +30,17 @@ class Node{
     hostname = (TestingMode.isOn()) ? "localhost" : hn;
     serverUp = true;        
     (new ServerThread(this, port)).start();
-    if(TestingMode.isOn()) startPrintThread();
   }
 
   public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
     senders.put(nbrUID, new Sender(nbrhostname, nbrport, nbrUID));
-    neighbors2weights.put(nbrUID, w);
+    weights.put(nbrUID, w);
   }
   public void connectToSynchronizer(String syncHostname, int syncPort){
     senderToSynchronizer = new Sender(syncHostname, syncPort, -1);
   }
   public void initGHS(){
+    System.out.println(this.toString());
     ghs = new GHS(this);
   }
 
@@ -50,27 +51,11 @@ class Node{
   }
 
   public String toString(){
-      StringBuilder sb = new StringBuilder();
-
-      sb.append(uid).append(" ");
-      sb.append(hostname).append(" ");
-      sb.append(port).append(" ");
-
-      for(int neighbor: neighbors2weights.keySet())
-          sb.append(neighbor).append("    ");
-
-      return sb.toString();
-  }
-  private void startPrintThread(){
-    Node t = this;
-    (new Thread() {
-      @Override
-      public void run() {
-        while(true){
-          Wait.thirtySeconds();
-          TestingMode.print(t.toString());
-        }
-      }
-    }).start();
+    StringJoiner sb = new StringJoiner(" ");
+    sb.add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port));
+    sb.add("\tNeighbors:");
+    for(int neighbor: weights.keySet())
+        sb.add(String.valueOf(neighbor)).add("\t");
+    return sb.toString();
   }
 }

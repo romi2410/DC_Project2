@@ -85,7 +85,7 @@ public class DC_Project2 {
         for(Node n: nodes.values())
           if(n.serverUp)
             nodesStarted.add(n.uid);
-        TestingMode.print(nodesStarted.size() + "/" + numNodes + "\t" + sync.serverUp);
+        TestingMode.print("Servers Up: " + nodesStarted.size() + "/" + numNodes + "\tSynchronized? " + sync.serverUp);
         Wait.aSec();
       }
     }

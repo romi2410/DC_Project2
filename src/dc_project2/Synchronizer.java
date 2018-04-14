@@ -1,17 +1,10 @@
 package dc_project2;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 
@@ -32,14 +25,12 @@ public class Synchronizer {
   
 
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
-    System.out.println("Inside Synchronizer constructor");
     for(int nodeUID: nodes.keySet())
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
     startServer();
-    if(TestingMode.isOn()) startPrintThread();
-    System.out.println("Terminating Synchronizer constructor");
+    if(TestingMode.isOn()) TestingMode.startPrintThread(this);
   }
   
   private void startServer(){
@@ -82,23 +73,12 @@ public class Synchronizer {
     sendersUp = true;
   }
   
-  private void startPrintThread(){
-    (new Thread() {
-      @Override
-      public void run() {
-        while(true){
-          Wait.thirtySeconds();
-          printAll();
-        }
-      }
-    }).start();
-  }
-  private void printAll(){
-    TestingMode.print(String.valueOf(level));
+  public String toString(){
+    StringJoiner sj = new StringJoiner("\n");
+    sj.add("Level: " + level);
     for(LeaderToken leader: leaders.values())
-      TestingMode.print(leader.toString());
-    //for(Sender sender: senders.values())
-    //  System.out.println(sender.toString());
+      sj.add(leader.toString());
+    return sj.toString();
   }
 }
 
