@@ -96,8 +96,9 @@ public class Synchronizer {
     }).start();
   }
   private void printAll(){
+    TestingMode.print(String.valueOf(level));
     for(LeaderToken leader: leaders.values())
-      System.out.println(leader.toString());
+      TestingMode.print(leader.toString());
     //for(Sender sender: senders.values())
     //  System.out.println(sender.toString());
   }
@@ -117,29 +118,29 @@ class Sender{
   Sender(String nodeHostname, int nodePort, int ownerUID){
     this.ownerUID = ownerUID;
     while(!successfullyConnected) try {
-        Socket s = new Socket(nodeHostname, nodePort);
-        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-        (new Thread() {
-            @Override
-            public void run() {
-              while(true){
-                try                 { out.write(serializedMsg); }
-                catch(IOException e){ e.printStackTrace(); }
-                Wait.aSec();
-              }
+      Socket s = new Socket(nodeHostname, nodePort);
+      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+      (new Thread() {
+          @Override
+          public void run() {
+            while(true){
+              try                 { out.write(serializedMsg); }
+              catch(IOException e){ e.printStackTrace(); }
+              Wait.aSec();
             }
-        }).start();
-        successfullyConnected = true;
-      } catch (UnknownHostException e){ e.printStackTrace();
-      } catch (IOException e)         { e.printStackTrace();
+          }
+      }).start();
+      successfullyConnected = true;
+    } catch (UnknownHostException e){ e.printStackTrace();
+    } catch (IOException e)         { e.printStackTrace();
     }
 
-    TestingMode.print("Number of threads after starting edge " + ownerUID + ", " + nodePort + ": " + TestingMode.threadCount());
-    try{
-      TimeUnit.SECONDS.sleep(1);
-    } catch(InterruptedException e){
-      System.out.println(e);
-    }
+//    TestingMode.print("Number of threads after starting edge " + ownerUID + ", " + nodePort + ": " + TestingMode.threadCount());
+//    try{
+//      TimeUnit.SECONDS.sleep(1);
+//    } catch(InterruptedException e){
+//      System.out.println(e);
+//    }
   }
   
   public void send(Message msg){

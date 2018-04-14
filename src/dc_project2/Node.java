@@ -63,12 +63,12 @@ class Node{
           e.printStackTrace();
       }
 
-      TestingMode.print("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + TestingMode.threadCount());
-      try{
-        TimeUnit.SECONDS.sleep(1);
-      } catch(InterruptedException e){
-        System.out.println(e);
-      }
+//      TestingMode.print("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + TestingMode.threadCount());
+//      try{
+//        TimeUnit.SECONDS.sleep(1);
+//      } catch(InterruptedException e){
+//        System.out.println(e);
+//      }
       
       return successfullyConnected;
     }

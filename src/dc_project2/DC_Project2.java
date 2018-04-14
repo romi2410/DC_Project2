@@ -31,12 +31,12 @@ public class DC_Project2 {
       System.exit(0);
     }
 
-    System.out.println("Number of threads: " + Thread.activeCount());
-    try{
-      TimeUnit.SECONDS.sleep(2);
-    } catch(InterruptedException e){
-      System.out.println(e);
-    }
+//    System.out.println("Number of threads: " + Thread.activeCount());
+//    try{
+//      TimeUnit.SECONDS.sleep(2);
+//    } catch(InterruptedException e){
+//      System.out.println(e);
+//    }
   }
   
   public static int startServers(){
