@@ -1,8 +1,8 @@
 package dc_project2;
+
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -41,33 +41,8 @@ public class Synchronizer {
   }
   
   private void startServer(){
-        server = true;
-        Synchronizer t = this;
-        
-        (new Thread() {
-            @Override
-            public void run() 
-            {
-                boolean successfullyConnected = false;
-                while(!successfullyConnected)
-                try{
-                    ServerSocket ss = new ServerSocket(port);
-                    while(true)
-                    try {
-                        Socket s = ss.accept();
-                        ClientManagerSynchronizer w = new ClientManagerSynchronizer(s, t);
-                        Thread t = new Thread(w);
-                        t.start();
-                        successfullyConnected = true;
-                    } catch(IOException e) {
-                        System.out.println("accept failed");
-                        System.exit(100);
-                    }		
-                } catch(IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }).start();
+    server = true;
+    (new ServerThread(this, port)).start();
   }
   public void handleMsg(MWOEMsg m){
     LeaderToken sender = leaders.get(m.sender);
