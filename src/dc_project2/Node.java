@@ -3,7 +3,6 @@ package dc_project2;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -30,91 +29,68 @@ class Node{
     
     
     public Node(int u, String hn, int p) {
-        uid = u;  port = p;
-        hostname = (TestingMode.isOn()) ? "localhost" : hn;
-        startServer();
-    }
-    private void startServer() {
-        server = true;
-        Node t = this;
-        
-        (new Thread() {
-            @Override
-            public void run() 
-            {
-                boolean successfullyConnected = false;
-                while(!successfullyConnected)
-                try{
-                    ServerSocket ss = new ServerSocket(port);
-                    while(true)
-                    try {
-                        Socket s = ss.accept();
-                        ClientManager w = new ClientManager(s, t);
-                        Thread t = new Thread(w);
-                        t.start();
-                        //successfullyConnected = true;
-                    } catch(IOException e) {
-                        System.out.println("accept failed");
-                        System.exit(100);
-                    }		
-                } catch(IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }).start();
+      uid = u;  port = p;
+      hostname = (TestingMode.isOn()) ? "localhost" : hn;
+      server = true;        
+      (new ServerThread(this, port)).start();
     }
     public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
       neighbors2lastsent.put(nbrUID, "");
-      startSender(nbrport, nbrhostname, nbrUID);
       neighbors2weights.put(nbrUID, w);
+      boolean successfullyConnected = startSender(nbrport, nbrhostname, nbrUID);
+      while(!successfullyConnected){ Wait.aSec();}
       numEdges++;
     }
-    private void startSender(int nbrport, String nbrhostname, int nbrUID) {
-        boolean successfullyConnected = false;
-        while(!successfullyConnected) try {
-            Socket s = new Socket(nbrhostname, nbrport);
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-            (new Thread() {
-                @Override
-                public void run() {
-                  while(true){
-                    try{out.write(neighbors2lastsent.get(nbrUID));}
-                    catch(IOException e){ e.printStackTrace(); }
-                  }
+    private boolean startSender(int nbrport, String nbrhostname, int nbrUID) {
+      boolean successfullyConnected = false;
+      while(!successfullyConnected) try {
+          Socket s = new Socket(nbrhostname, nbrport);
+          BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+          (new Thread() {
+              @Override
+              public void run() {
+                while(true){
+                  try{out.write(neighbors2lastsent.get(nbrUID));}
+                  catch(IOException e){ e.printStackTrace(); }
+                  Wait.aSec();
                 }
-            }).start();
-            successfullyConnected = true;
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        
-        TestingMode.print("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + TestingMode.threadCount());
-        try{
-          TimeUnit.SECONDS.sleep(1);
-        } catch(InterruptedException e){
-          System.out.println(e);
-        }
+              }
+          }).start();
+          successfullyConnected = true;
+      } catch (UnknownHostException e) {
+          e.printStackTrace();
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+
+      TestingMode.print("Number of threads after starting edge " + uid + ", " + nbrUID + ": " + TestingMode.threadCount());
+      try{
+        TimeUnit.SECONDS.sleep(1);
+      } catch(InterruptedException e){
+        System.out.println(e);
+      }
+      
+      return successfullyConnected;
     }
     public void connectToSynchronizer(String syncHostname, int syncPort){
-        boolean successfullyConnected = false;
-        while(!successfullyConnected) try {
-            Socket s = new Socket(syncHostname, syncPort);
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-            (new Thread() {
-                @Override
-                public void run() {
-                  while(true)
-                    try                   { out.write(sendToSynchronizer); }
-                    catch(IOException e)  { e.printStackTrace(); }
-                }
-            }).start();
-            successfullyConnected = true;
-            numEdges++;
-        } catch (UnknownHostException e)  { e.printStackTrace();
-        } catch (IOException e)           { e.printStackTrace();
-        }
+      boolean successfullyConnected = false;
+      while(!successfullyConnected) try {
+        Socket s = new Socket(syncHostname, syncPort);
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+        (new Thread() {
+          @Override
+          public void run() {
+            while(true){
+              try                   { out.write(sendToSynchronizer); }
+              catch(IOException e)  { e.printStackTrace(); }
+              Wait.aSec();
+            }
+          }
+        }).start();
+        successfullyConnected = true;
+      } catch (UnknownHostException e)  { e.printStackTrace();
+      } catch (IOException e)           { e.printStackTrace();
+      }
     }
     public void initGHS(){
       ghs = new GHS(this);
