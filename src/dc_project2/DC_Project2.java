@@ -125,8 +125,10 @@ public class DC_Project2 {
       int edgeCnt = 0;
       while(edgeCnt<numEdges || !sync.sendersUp){
         edgeCnt = 0;
-        for(Node node: nodes.values())
+        for(Node node: nodes.values()){
+          TestingMode.print(node.uid + " has " + node.numEdges + " edges");
           edgeCnt += node.numEdges;
+        }
         TestingMode.print(edgeCnt + "/" + numEdges + "\t" + sync.sendersUp);
         Wait.aSec();
       }

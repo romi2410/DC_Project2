@@ -73,25 +73,24 @@ class Node{
       return successfullyConnected;
     }
     public void connectToSynchronizer(String syncHostname, int syncPort){
-        boolean successfullyConnected = false;
-        while(!successfullyConnected) try {
-            Socket s = new Socket(syncHostname, syncPort);
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-            (new Thread() {
-                @Override
-                public void run() {
-                  while(true){
-                    try                   { out.write(sendToSynchronizer); }
-                    catch(IOException e)  { e.printStackTrace(); }
-                    Wait.aSec();
-                  }
-                }
-            }).start();
-            successfullyConnected = true;
-            numEdges++;
-        } catch (UnknownHostException e)  { e.printStackTrace();
-        } catch (IOException e)           { e.printStackTrace();
-        }
+      boolean successfullyConnected = false;
+      while(!successfullyConnected) try {
+        Socket s = new Socket(syncHostname, syncPort);
+        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+        (new Thread() {
+          @Override
+          public void run() {
+            while(true){
+              try                   { out.write(sendToSynchronizer); }
+              catch(IOException e)  { e.printStackTrace(); }
+              Wait.aSec();
+            }
+          }
+        }).start();
+        successfullyConnected = true;
+      } catch (UnknownHostException e)  { e.printStackTrace();
+      } catch (IOException e)           { e.printStackTrace();
+      }
     }
     public void initGHS(){
       ghs = new GHS(this);

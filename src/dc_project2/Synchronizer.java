@@ -89,7 +89,7 @@ public class Synchronizer {
       @Override
       public void run() {
         while(true){
-          Wait.tenSeconds();
+          Wait.thirtySeconds();
           printAll();
         }
       }
@@ -180,12 +180,17 @@ class LeaderToken{
   @Override
   public String toString(){
     StringJoiner sj = new StringJoiner(" ");
-    sj.add(String.valueOf(uid)).add("wants to merge with").add(String.valueOf(wantsToMergeWith));
-    sj.add("and has <");
+    sj.add(String.valueOf(uid)).add(" has component <");
     for (int node : component) 
       sj.add(String.valueOf(node));
     sj.add(">\t");
-    sj.add("its MWOEMsg is\t").add(mwoe.toString());
+    
+    if(rcvdMsg){
+      sj.add(" and wants to merge with").add(String.valueOf(wantsToMergeWith));
+      sj.add("\t\tits MWOEMsg is\t").add(mwoe.toString());
+    }
+    else
+      sj.add(" and has not send a MWOEMsg yet this level");
     return sj.toString();
   }
 }
