@@ -32,6 +32,7 @@ public class Synchronizer {
   
 
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
+    System.out.println("Inside Synchronizer constructor");
     for(int nodeUID: nodes.keySet())
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
@@ -39,12 +40,13 @@ public class Synchronizer {
     startServer();
     if(TestingMode.isOn())
       startPrintThread();
+    System.out.println("Terminating Synchronizer constructor");
   }
   
   private void startServer(){
     ServerThread server = new ServerThread(this, port);
     server.start();
-    while(!server.successfullyConnected){}
+    while(!server.up){ Wait.aSec(); }
     serverUp = true;
   }
   
@@ -77,7 +79,7 @@ public class Synchronizer {
   public void connectToNodes(Set<Node> nodes){
     for(Node node: nodes)
       senders.put(node.uid, new Sender(node.hostname, node.port, uid));
-    while(!allTrue(senders.values(), Sender.successfullyConnected())){}
+    while(!allTrue(senders.values(), Sender.successfullyConnected())){Wait.aSec();}
     sendersUp = true;
   }
   private boolean allTrue(Collection c, Predicate p){ return c.stream().allMatch(p); }
@@ -87,12 +89,8 @@ public class Synchronizer {
       @Override
       public void run() {
         while(true){
-          try{
-            Thread.sleep(10000);  // 10 seconds
-            printAll();
-          }catch(InterruptedException e){
-            System.out.println(e);
-          }
+          Wait.tenSeconds();
+          printAll();
         }
       }
     }).start();
@@ -127,6 +125,7 @@ class Sender{
               while(true){
                 try                 { out.write(serializedMsg); }
                 catch(IOException e){ e.printStackTrace(); }
+                Wait.aSec();
               }
             }
         }).start();

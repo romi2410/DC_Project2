@@ -11,7 +11,7 @@ import java.net.Socket;
 public class ServerThread extends Thread{
   Object t;
   int port;
-  boolean successfullyConnected = false;
+  boolean up = false;
   
   ServerThread(Node t, int port){
     this.t = t;
@@ -24,24 +24,22 @@ public class ServerThread extends Thread{
   
   @Override
   public void run(){
-    while(!successfullyConnected)
     try{
-        ServerSocket ss = new ServerSocket(port);
-        while(true)
-        try {
-            Socket s = ss.accept();
-            Runnable w = new Thread();
-            if(t.getClass().equals(Node.class))
-              w = new ClientManager(s, (Node) t);
-            else if(t.getClass().equals(Synchronizer.class))
-              w = new ClientManagerSynchronizer(s, (Synchronizer) t);
-            Thread t = new Thread(w);
-            t.start();
-            successfullyConnected = true;
-        } catch(IOException e) {
-            System.out.println("accept failed");
-            System.exit(100);
-        }		
+      ServerSocket ss = new ServerSocket(port);
+      up = true;
+      while(true) try {
+          Socket s = ss.accept();
+          Runnable w = new Thread();
+          if(t.getClass().equals(Node.class))
+            w = new ClientManager(s, (Node) t);
+          else if(t.getClass().equals(Synchronizer.class))
+            w = new ClientManagerSynchronizer(s, (Synchronizer) t);
+          Thread t = new Thread(w);
+          t.start();
+      } catch(IOException e) {
+          System.out.println("accept failed");
+          System.exit(100);
+      }		
     } catch(IOException ex) {
         ex.printStackTrace();
     }

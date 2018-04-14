@@ -31,25 +31,21 @@ public class DC_Project2 {
       System.exit(0);
     }
 
-    //while(true){
     System.out.println("Number of threads: " + Thread.activeCount());
     try{
       TimeUnit.SECONDS.sleep(2);
     } catch(InterruptedException e){
       System.out.println(e);
     }
-    //}
   }
   
   public static int startServers(){
     int numNodes = readNumNodes();
-    nodes = initNodes(numNodes);
     TestingMode.print("Starting nodes");
-    synchronizer = initSynchronizer(nodes);
+    nodes = initNodes(numNodes);
     TestingMode.print("Starting synchronizer");
-    while(serversStillStarting(nodes, numNodes, synchronizer)){
-      // nop
-    }
+    synchronizer = initSynchronizer(nodes);
+    haltUntilServersStarted(nodes, numNodes, synchronizer);
     TestingMode.print("Started all servers");
     return numNodes;
   }
@@ -61,9 +57,7 @@ public class DC_Project2 {
     TestingMode.print("Starting node->synchronizer senders");
     for(Node node: nodes.values())
         node.connectToSynchronizer(synchronizer.hostname, synchronizer.port);
-    while(socketsStillStarting(nodes, numEdges, synchronizer)){
-      // nop
-    }
+    haltUntilSendersStarted(nodes, numEdges, synchronizer);
     TestingMode.print("Started all senders");
   }
   
@@ -96,24 +90,25 @@ public class DC_Project2 {
       return nodes;
     }
     
-    public static boolean serversStillStarting(HashMap<Integer, Node> nodes, int numNodes, Synchronizer sync){
-      HashSet<Integer> started = new HashSet<>();
-      for(Node n: nodes.values())
-        if(n.server)
-          started.add(n.uid);
-      return (started.size() < numNodes) && sync.serverUp;
+    public static void haltUntilServersStarted(HashMap<Integer, Node> nodes, int numNodes, Synchronizer sync){
+      HashSet<Integer> nodesStarted = new HashSet<Integer>();
+      while((nodesStarted.size() < numNodes) || !sync.serverUp){
+        nodesStarted = new HashSet<Integer>();
+        for(Node n: nodes.values())
+          if(n.server)
+            nodesStarted.add(n.uid);
+        TestingMode.print(nodesStarted.size() + "/" + numNodes + "\t" + sync.serverUp);
+        Wait.aSec();
+      }
     }
     
     // returns number of edges
     public static int initEdges(HashMap<Integer, Node> nodes){
       int numEdges = 0;
       while(sc.hasNext())
-        {
-          String line = sc.nextLine();
-
+        { String line = sc.nextLine();
           if(!(line.startsWith("#") || line.trim().length() == 0))
-          {
-            String[] params = line.trim().split("\\s+");
+          { String[] params = line.trim().split("\\s+");
             double w = Double.parseDouble(params[1]);
             String[] tuple = params[0].substring(1, params[0].length()-1).split(",");
             Node node1 = nodes.get(Integer.parseInt(tuple[0]));
@@ -126,12 +121,15 @@ public class DC_Project2 {
       return numEdges;
     }
     
-    public static boolean socketsStillStarting(HashMap<Integer, Node> nodes, int numEdges, Synchronizer sync){
+    public static void haltUntilSendersStarted(HashMap<Integer, Node> nodes, int numEdges, Synchronizer sync){
       int edgeCnt = 0;
-      edgeCnt = 0;
-      for(Node node: nodes.values())
-        edgeCnt += node.numEdges;
-      return edgeCnt < numEdges && sync.sendersUp;
+      while(edgeCnt<numEdges || !sync.sendersUp){
+        edgeCnt = 0;
+        for(Node node: nodes.values())
+          edgeCnt += node.numEdges;
+        TestingMode.print(edgeCnt + "/" + numEdges + "\t" + sync.sendersUp);
+        Wait.aSec();
+      }
     }
     
     // initializes the Synchronizer

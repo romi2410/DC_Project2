@@ -38,7 +38,7 @@ class Node{
       neighbors2lastsent.put(nbrUID, "");
       neighbors2weights.put(nbrUID, w);
       boolean successfullyConnected = startSender(nbrport, nbrhostname, nbrUID);
-      while(!successfullyConnected){}
+      while(!successfullyConnected){ Wait.aSec();}
       numEdges++;
     }
     private boolean startSender(int nbrport, String nbrhostname, int nbrUID) {
@@ -52,6 +52,7 @@ class Node{
                 while(true){
                   try{out.write(neighbors2lastsent.get(nbrUID));}
                   catch(IOException e){ e.printStackTrace(); }
+                  Wait.aSec();
                 }
               }
           }).start();
@@ -79,9 +80,11 @@ class Node{
             (new Thread() {
                 @Override
                 public void run() {
-                  while(true)
+                  while(true){
                     try                   { out.write(sendToSynchronizer); }
                     catch(IOException e)  { e.printStackTrace(); }
+                    Wait.aSec();
+                  }
                 }
             }).start();
             successfullyConnected = true;
