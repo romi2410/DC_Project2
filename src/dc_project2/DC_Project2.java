@@ -83,7 +83,7 @@ public class DC_Project2 {
         for(Node n: nodes.values())
           if(n.serverUp)
             nodesStarted.add(n.uid);
-        Wait.aSec();
+        Wait.threeSeconds();
       }
     }
     
@@ -106,7 +106,7 @@ public class DC_Project2 {
     public static void haltUntilSendersStarted(HashMap<Integer, Node> nodes, Synchronizer sync){
       TestingMode.print("Verifying that edges are created");
       for(Node node: nodes.values())  { node.haltUntilSendersUp();  }
-      while(!sync.sendersUp)          { Wait.aSec();                }
+      while(!sync.sendersUp)          { Wait.threeSeconds();        }
     }
     
     // initializes the Synchronizer

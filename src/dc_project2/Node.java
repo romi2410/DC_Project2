@@ -1,6 +1,7 @@
 package dc_project2;
 
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringJoiner;
 
@@ -22,7 +23,7 @@ class Node{
   boolean serverUp = false;
   public void haltUntilSendersUp(){
     while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected()))
-      { Wait.aSec(); }
+      { Wait.threeSeconds(); }
   }
 
   public Node(int u, String hn, int p) {
@@ -46,6 +47,7 @@ class Node{
 
   public void sendTo(int rcvrUid, Message newMsg){
     TestingMode.print(uid + " is sending " + newMsg.toString() + " to " + rcvrUid);
+    try{  TestingMode.print("\thaving rcvd " + ghs.rcvdFromNbrs()); } catch(NullPointerException e){}
     newMsg.sender = uid;
     if(rcvrUid==-1) senderToSynchronizer.send(newMsg);
     else            senders.get(rcvrUid).send(newMsg);
@@ -54,9 +56,6 @@ class Node{
   public String toString(){
     StringJoiner sb = new StringJoiner(" ");
     sb.add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port));
-    sb.add("\tNeighbors:");
-    for(int neighbor: weights.keySet())
-        sb.add(String.valueOf(neighbor));
     return sb.toString();
   }
 }

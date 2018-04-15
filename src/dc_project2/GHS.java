@@ -12,9 +12,16 @@ import java.util.stream.Collectors;
 public class GHS {
   
   // rcvd msgs
-  HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
+  private HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
   public boolean rcvdFromAllNbrs(){
     return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
+  }
+  public String rcvdFromNbrs(){
+    try{
+      StringJoiner sj = new StringJoiner("\n\t");
+      rcvdFromNbr.entrySet().forEach(e -> sj.add(e.getKey()+":"+e.getValue()));
+      return sj.toString();
+    }catch(NullPointerException e){ return "no messages"; }
   }
 
   MWOEMsg mwoeMsg;
@@ -71,7 +78,7 @@ public class GHS {
 
   private void handleMWOEMsg(MWOEMsg newMwoeMsg){
     rcvdFromNbr.put(newMwoeMsg.sender, newMwoeMsg);
-    //m.appendToPath(m.sender);
+    newMwoeMsg.path.add(node.uid);
     mwoeMsg = (mwoeMsg != null) ? MWOEMsg.min(mwoeMsg, newMwoeMsg) : newMwoeMsg;
     if(rcvdFromAllNbrs())
       node.sendTo(parent, mwoeMsg);
@@ -86,17 +93,10 @@ public class GHS {
   private void handleNewLeaderMsg(NewLeaderMsg m){
     leader = m.newLeader;
     treeNbrs = intersection(node.neighbors(), m.component);
-    if(this.isLeader())
-      parent = -1;
-    else
-      parent = ;
+    parent = (this.isLeader()) ? -1 : m.path.findPrecedingNode(node.uid);
     newSearchPhase();
   }
-  private HashSet intersection(Set a, Set b){
-    HashSet i = new HashSet(a);
-    i.retainAll(b);
-    return i;
-  }
+  private HashSet intersection(Set a, Set b){ HashSet i = new HashSet(a); i.retainAll(b); return i; }
 
   private void terminate(){
     String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining("-"+node.uid+", "));

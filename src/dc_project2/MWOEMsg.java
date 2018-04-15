@@ -1,6 +1,4 @@
 package dc_project2;
-import java.util.Deque;
-import java.util.ArrayDeque;
 
 // Convergecast
 public class MWOEMsg extends Message{
@@ -9,7 +7,7 @@ public class MWOEMsg extends Message{
   int leafnode;
   int externalNode;
   double weight;
-  //Deque<Integer> path = new ArrayDeque<Integer>();
+  Path path;
 
   public MWOEMsg(int compLeader, int externalLeader, int leafnode, int extnode, double weight, int sender){
     super(sender);
@@ -18,12 +16,8 @@ public class MWOEMsg extends Message{
     this.leafnode = leafnode;
     this.externalNode = extnode;
     this.weight = weight;
-    //path.add(externalNode);
+    this.path = new Path(extnode);
   }
-
-//    public void appendToPath(int sender){
-//      path.add(sender);
-//    }
 
   public static MWOEMsg min(MWOEMsg a, MWOEMsg b){
     if(a.weight > b.weight)

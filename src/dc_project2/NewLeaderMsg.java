@@ -1,6 +1,4 @@
 package dc_project2;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.HashSet;
 
 // broadcast
@@ -10,7 +8,7 @@ class NewLeaderMsg extends Message{
   int oldLeader1, oldLeader2;
   int sender;
   HashSet<Integer> component;
-  //Deque<Integer> path = new ArrayDeque<Integer>();
+  Path path;
 
   public NewLeaderMsg(int sender, int newLeader, MWOEMsg m, HashSet<Integer> component){
     super(sender);
@@ -18,6 +16,6 @@ class NewLeaderMsg extends Message{
     this.oldLeader1 = m.compLeader;
     this.oldLeader2 = m.externalLeader;
     this.component = component;
-    //this.path = m.path;
+    this.path = m.path;
   }
 }

@@ -36,7 +36,7 @@ public class Synchronizer {
   private void startServer(){
     ServerThread server = new ServerThread(this, port);
     server.start();
-    while(!server.up){ Wait.aSec(); }
+    while(!server.up){ Wait.threeSeconds(); }
     serverUp = true;
   }
   
@@ -69,7 +69,7 @@ public class Synchronizer {
   public void connectToNodes(Set<Node> nodes){
     for(Node node: nodes)
       senders.put(node.uid, new Sender(node.hostname, node.port, uid));
-    while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.aSec();}
+    while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.threeSeconds();}
     sendersUp = true;
   }
   

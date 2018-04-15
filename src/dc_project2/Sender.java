@@ -25,7 +25,7 @@ public class Sender{
           while(true){
             try{  if(msg != null) { outputStream.writeObject(msg);  }
             }catch(IOException e) { e.printStackTrace();            }
-            Wait.aSec();
+            Wait.threeSeconds();
           }
         }
       }).start();
