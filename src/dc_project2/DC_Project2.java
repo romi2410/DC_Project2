@@ -4,7 +4,6 @@ import java.util.Scanner;
 import java.io.*;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
 
 public class DC_Project2 {
 
@@ -66,8 +65,7 @@ public class DC_Project2 {
       while(nodesInitialized < numNodes){
         String line = sc.nextLine();
         if(!(line.startsWith("#") || line.trim().length() == 0))
-        {
-          String[] params = line.trim().split("\\s+");
+        { String[] params = line.trim().split("\\s+");
           int uid = Integer.parseInt(params[0]);
           String hostname = params[1];
           int port = Integer.parseInt(params[2]);
@@ -85,7 +83,6 @@ public class DC_Project2 {
         for(Node n: nodes.values())
           if(n.serverUp)
             nodesStarted.add(n.uid);
-        TestingMode.print("Servers Up: " + nodesStarted.size() + "/" + numNodes + "\tSynchronized? " + sync.serverUp);
         Wait.aSec();
       }
     }

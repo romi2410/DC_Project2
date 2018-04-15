@@ -15,16 +15,18 @@ public class Sender{
   boolean successfullyConnected = false;
   public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
   
-  Sender(String nodeHostname, int nodePort, int ownerUID){
-    this.ownerUID = ownerUID;
+  Sender(String rcvrHostname, int rcvrPort, int senderUID){
+    this.ownerUID = senderUID;
     while(!successfullyConnected) try {
-      Socket s = new Socket(nodeHostname, nodePort);
+      Socket s = new Socket(rcvrHostname, rcvrPort);
       BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
       (new Thread() {
           @Override
           public void run() {
             while(true){
-              try                 { out.write(serializedMsg); }
+              try                 { out.write(serializedMsg); 
+                if(serializedMsg.trim().length()>0)
+                  TestingMode.print(ownerUID + " sent " + serializedMsg + " to " + rcvrPort);}
               catch(IOException e){ e.printStackTrace(); }
               Wait.aSec();
             }
@@ -40,6 +42,7 @@ public class Sender{
     msg.sender = ownerUID;
     try{
       serializedMsg = msg.serialize();
+      TestingMode.print(ownerUID + " is loaded to send " + msg.toString());
     } catch (IOException e) {
       System.out.println(e);
       System.out.println("Attempt to serialize " + msg.toString() + " failed");

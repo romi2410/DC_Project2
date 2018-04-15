@@ -33,7 +33,7 @@ class Node{
   }
 
   public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
-    senders.put(nbrUID, new Sender(nbrhostname, nbrport, nbrUID));
+    senders.put(nbrUID, new Sender(nbrhostname, nbrport, uid));
     weights.put(nbrUID, w);
   }
   public void connectToSynchronizer(String syncHostname, int syncPort){
@@ -45,6 +45,7 @@ class Node{
   }
 
   public void sendTo(int rcvrUid, Message newMsg){
+    TestingMode.print(uid + " wants to send " + newMsg.toString() + " to " + rcvrUid);
     newMsg.sender = uid;
     if(rcvrUid==-1) senderToSynchronizer.send(newMsg);
     else            senders.get(rcvrUid).send(newMsg);

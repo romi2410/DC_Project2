@@ -44,7 +44,7 @@ public class GHS {
   }
 
   public void handleMsg(Object msg){
-    System.out.println(node.uid + " rcvd " + msg.toString());
+    System.out.println(node.uid + "'s GHS is handling " + msg.toString());
     Class msgType = msg.getClass();
     if(msgType == SearchMsg.class)
         handleSearchMsg((SearchMsg) msg);
@@ -102,7 +102,7 @@ public class GHS {
 
   public String toString(){
     StringJoiner sb = new StringJoiner(" ");
-    sb.add("GHS Node ").add(String.valueOf(node.uid));
+    sb.add("GHS Node").add(String.valueOf(node.uid));
     sb.add("Received following messages this level:");
     for(Entry<Integer, Message> rcvdMsg: rcvdFromNbr.entrySet())
       sb.add("\nReceived " + rcvdMsg.getValue().toString() + " from " + rcvdMsg.getKey());

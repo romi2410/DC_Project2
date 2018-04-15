@@ -26,22 +26,24 @@ public class ServerThread extends Thread{
   public void run(){
     try{
       ServerSocket ss = new ServerSocket(port);
+      TestingMode.print("Opening up new ServerSocket at port " + port);
       up = true;
       while(true) try {
-          Socket s = ss.accept();
-          Runnable w = new Thread();
-          if(t.getClass().equals(Node.class))
-            w = new ClientManager(s, (Node) t);
-          else if(t.getClass().equals(Synchronizer.class))
-            w = new ClientManagerSynchronizer(s, (Synchronizer) t);
-          Thread t = new Thread(w);
-          t.start();
+        Socket s = ss.accept();
+        TestingMode.print("ServerSocket at port " + port + " has accepted a new connection!");
+        Runnable w = new Thread();
+        if(t.getClass().equals(Node.class))
+          w = new ClientManager(s, (Node) t);
+        else if(t.getClass().equals(Synchronizer.class))
+          w = new ClientManagerSynchronizer(s, (Synchronizer) t);
+        Thread t = new Thread(w);
+        t.start();
       } catch(IOException e) {
-          System.out.println("accept failed");
-          System.exit(100);
+        System.out.println("accept failed");
+        System.exit(100);
       }		
     } catch(IOException ex) {
-        ex.printStackTrace();
+      ex.printStackTrace();
     }
   }
 }
@@ -49,38 +51,27 @@ public class ServerThread extends Thread{
 
 
 class ClientManager implements Runnable {
-	
-    private Socket client;
+    Socket client;
     Node owner;
-
-    public ClientManager(Socket client, Node owner) {
-      this.client = client;
-      this.owner = owner;
-    }
+    public ClientManager(Socket client, Node owner) { this.client = client; this.owner = owner; }
 
     @Override
     public void run() {
+      TestingMode.print(String.valueOf(owner.uid) + " is running a ClientManager on " + client.toString());
       try {
         String line;
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(client.getInputStream()));
-
+        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
         while ((line = in.readLine()) != null){ handleMsg(line); }
-	} catch(IOException e) {
-            e.printStackTrace();
-      }
+      } catch(IOException e) {  e.printStackTrace();  }
     }
     
     public void handleMsg(String m){
+      TestingMode.print(String.valueOf(owner) + " rcvd " + m);
       Object message;
       try {
-         ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
-         ObjectInputStream si = new ObjectInputStream(bi);
-         message = si.readObject();
-         owner.ghs.handleMsg(message);
-       } catch (Exception e) {
-           System.out.println(e);
-       }
+        message = (new ObjectInputStream(new ByteArrayInputStream(m.getBytes()))).readObject();
+        owner.ghs.handleMsg(message);
+      } catch (Exception e) { System.out.println(e);  }
     }
 }
 
