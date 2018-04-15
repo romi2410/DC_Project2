@@ -30,7 +30,6 @@ public class ServerThread extends Thread{
       up = true;
       while(true) try {
         Socket s = ss.accept();
-        TestingMode.print("ServerSocket at port " + port + " has accepted a new connection!");
         Runnable w = new Thread();
         if(t.getClass().equals(Node.class))
           w = new ClientManager(s, (Node) t);
@@ -57,7 +56,6 @@ class ClientManager implements Runnable {
 
   @Override
   public void run() {
-    TestingMode.print(String.valueOf(owner.uid) + " is running a ClientManager on " + client.toString());
     try {
       Message msg;
       ObjectInputStream inputStream = new ObjectInputStream(client.getInputStream());
@@ -87,15 +85,10 @@ class ClientManagerSynchronizer implements Runnable {
   @Override
   public void run() {
     try {
-          String line;
-          BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-
-          while ((line = in.readLine()) != null){
-              handleMsg(line);
-          }
-  } catch(IOException e) {
-          e.printStackTrace();
-    }
+      String line;
+      BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+      while ((line = in.readLine()) != null){ handleMsg(line);  }
+    } catch(IOException e) { e.printStackTrace(); }
   }
 
   public void handleMsg(String m){

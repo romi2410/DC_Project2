@@ -25,11 +25,11 @@ public class MWOEMsg extends Message{
 //      path.add(sender);
 //    }
 
-  public static MWOEMsg max(MWOEMsg a, MWOEMsg b){
+  public static MWOEMsg min(MWOEMsg a, MWOEMsg b){
     if(a.weight > b.weight)
-      return a;
-    else if(a.weight < b.weight)
       return b;
+    else if(a.weight < b.weight)
+      return a;
     else{
       int a_BigLeader = Math.max(a.compLeader, a.externalLeader);
       int b_BigLeader = Math.max(b.compLeader, b.externalLeader);

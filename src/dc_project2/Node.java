@@ -45,7 +45,7 @@ class Node{
   }
 
   public void sendTo(int rcvrUid, Message newMsg){
-    TestingMode.print(uid + " wants to send " + newMsg.toString() + " to " + rcvrUid);
+    TestingMode.print(uid + " is sending " + newMsg.toString() + " to " + rcvrUid);
     newMsg.sender = uid;
     if(rcvrUid==-1) senderToSynchronizer.send(newMsg);
     else            senders.get(rcvrUid).send(newMsg);

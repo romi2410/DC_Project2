@@ -1,10 +1,4 @@
 package dc_project2;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.util.StringJoiner;
 
@@ -23,10 +17,12 @@ abstract class Message implements java.io.Serializable{
   }
   public static String fieldValues(Object o){
     StringJoiner sj = new StringJoiner("_");
-    for(Field field: o.getClass().getDeclaredFields())
-      try{
+    try{
+      for(Field field: o.getClass().getSuperclass().getDeclaredFields()) 
         sj.add(field.getName() + ":" + String.valueOf(field.get(o)));
-      }catch(IllegalAccessException e){System.out.println(e);}
+      for(Field field: o.getClass().getDeclaredFields())
+        sj.add(field.getName() + ":" + String.valueOf(field.get(o)));
+    }catch(IllegalAccessException e){System.out.println(e);}
     return sj.toString();
   }
 }

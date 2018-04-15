@@ -14,7 +14,7 @@ public class GHS {
   // rcvd msgs
   HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
   public boolean rcvdFromAllNbrs(){
-    return !Arrays.asList(rcvdFromNbr.values()).contains(null);
+    return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
   }
 
   MWOEMsg mwoeMsg;
@@ -35,8 +35,9 @@ public class GHS {
 
   private void newSearchPhase(){
     TestingMode.print(String.valueOf(node.uid) + " is starting a new phase!");
+    mwoeMsg = null;
     for(int uid: rcvdFromNbr.keySet())
-      rcvdFromNbr.put(uid, null);
+      rcvdFromNbr.put(uid, NullMsg.getInstance());
     if(this.isLeader())
       broadcast(new SearchMsg(leader, node.uid));
   }
@@ -45,7 +46,6 @@ public class GHS {
   }
 
   public void handleMsg(Object msg){
-    System.out.println(node.uid + "'s GHS is handling " + msg.toString());
     Class msgType = msg.getClass();
     if(msgType == SearchMsg.class)
       handleSearchMsg((SearchMsg) msg);
@@ -72,7 +72,7 @@ public class GHS {
   private void handleMWOEMsg(MWOEMsg newMwoeMsg){
     rcvdFromNbr.put(newMwoeMsg.sender, newMwoeMsg);
     //m.appendToPath(m.sender);
-    mwoeMsg = MWOEMsg.max(mwoeMsg, newMwoeMsg);
+    mwoeMsg = (mwoeMsg != null) ? MWOEMsg.min(mwoeMsg, newMwoeMsg) : newMwoeMsg;
     if(rcvdFromAllNbrs())
       node.sendTo(parent, mwoeMsg);
   }
@@ -88,6 +88,8 @@ public class GHS {
     treeNbrs = intersection(node.neighbors(), m.component);
     if(this.isLeader())
       parent = -1;
+    else
+      parent = ;
     newSearchPhase();
   }
   private HashSet intersection(Set a, Set b){

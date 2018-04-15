@@ -20,18 +20,14 @@ public class Sender{
       Socket s = new Socket(rcvrHostname, rcvrPort);
       ObjectOutputStream outputStream = new ObjectOutputStream(s.getOutputStream());
       (new Thread() {
-          @Override
-          public void run() {
-            while(true){
-              try{
-                if(msg != null){
-                  outputStream.writeObject(msg);
-                  TestingMode.print(ownerUID + " sent " + msg + " to " + rcvrPort);
-                }
-              }catch(IOException e){ e.printStackTrace(); }
-              Wait.aSec();
-            }
+        @Override
+        public void run() {
+          while(true){
+            try{  if(msg != null) { outputStream.writeObject(msg);  }
+            }catch(IOException e) { e.printStackTrace();            }
+            Wait.aSec();
           }
+        }
       }).start();
       successfullyConnected = true;
     } catch (UnknownHostException e){ e.printStackTrace();
