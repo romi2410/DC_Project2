@@ -1,8 +1,7 @@
 package dc_project2;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.function.Predicate;
@@ -10,7 +9,7 @@ import java.util.function.Predicate;
 
 
 public class Sender{
-  String serializedMsg;
+  Message msg;
   int ownerUID;
   boolean successfullyConnected = false;
   public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
@@ -19,18 +18,16 @@ public class Sender{
     this.ownerUID = senderUID;
     while(!successfullyConnected) try {
       Socket s = new Socket(rcvrHostname, rcvrPort);
-      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+      ObjectOutputStream outputStream = new ObjectOutputStream(s.getOutputStream());
       (new Thread() {
           @Override
           public void run() {
             while(true){
               try{
-                if(serializedMsg != null && serializedMsg.trim().length()>0){
-                  out.write(serializedMsg);
-                  TestingMode.print(ownerUID + " sent " + serializedMsg + " to " + rcvrPort);
+                if(msg != null){
+                  outputStream.writeObject(msg);
+                  TestingMode.print(ownerUID + " sent " + msg + " to " + rcvrPort);
                 }
-                out.newLine();
-                out.flush();
               }catch(IOException e){ e.printStackTrace(); }
               Wait.aSec();
             }
@@ -42,14 +39,8 @@ public class Sender{
     }
   }
   
-  public void send(Message msg){
-    msg.sender = ownerUID;
-    try{
-      serializedMsg = msg.serialize();
-      TestingMode.print(ownerUID + " is loaded to send " + msg.toString());
-    } catch (IOException e) {
-      System.out.println(e);
-      System.out.println("Attempt to serialize " + msg.toString() + " failed");
-    }
+  public void send(Message newMsg){
+    newMsg.sender = ownerUID;
+    msg = newMsg;
   }
 }

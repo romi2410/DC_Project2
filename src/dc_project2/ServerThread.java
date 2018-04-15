@@ -59,20 +59,19 @@ class ClientManager implements Runnable {
   public void run() {
     TestingMode.print(String.valueOf(owner.uid) + " is running a ClientManager on " + client.toString());
     try {
-      String line;
-      BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-      line = in.readLine();
-      while ((line = in.readLine()) != null){ handleMsg(line); }
+      Message msg;
+      ObjectInputStream inputStream = new ObjectInputStream(client.getInputStream());
+      try{
+        while ((msg = (Message) inputStream.readObject()) != null){ handleMsg(msg); }
+      }catch(ClassNotFoundException e){
+        System.out.println(owner+"'s connection to " + client.toString() + " failed; " + e);
+      }
     } catch(IOException e) {  e.printStackTrace();  }
   }
 
-  public void handleMsg(String m){
+  public void handleMsg(Message m){
     TestingMode.print(String.valueOf(owner) + " rcvd " + m);
-    Object message;
-    try {
-      message = (new ObjectInputStream(new ByteArrayInputStream(m.getBytes()))).readObject();
-      owner.ghs.handleMsg(message);
-    } catch (Exception e) { System.out.println(e);  }
+    owner.ghs.handleMsg(m);
   }
 }
 
