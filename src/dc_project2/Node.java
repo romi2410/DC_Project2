@@ -47,7 +47,8 @@ class Node{
 
   public void sendTo(int rcvrUid, Message newMsg){
     TestingMode.print(uid + " is sending " + newMsg.toString() + " to " + rcvrUid);
-    try{  TestingMode.print("\thaving rcvd " + ghs.rcvdFromNbrs()); } catch(NullPointerException e){}
+    try{                            TestingMode.print("\thaving rcvd " + ghs.rcvdFromNbrs()); }
+    catch(NullPointerException e){  TestingMode.print("\thaving rcvd no msgs");               }
     newMsg.sender = uid;
     if(rcvrUid==-1) senderToSynchronizer.send(newMsg);
     else            senders.get(rcvrUid).send(newMsg);

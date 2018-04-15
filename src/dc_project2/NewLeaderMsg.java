@@ -7,15 +7,17 @@ class NewLeaderMsg extends Message{
   int newLeader;
   int oldLeader1, oldLeader2;
   int sender;
-  HashSet<Integer> component;
-  Path path;
+  //HashSet<Integer> component;
+  //Path path;
+  HashSet<Integer> newNbrs;
 
-  public NewLeaderMsg(int sender, int newLeader, MWOEMsg m, HashSet<Integer> component){
+  public NewLeaderMsg(int sender, int newLeader, MWOEMsg m, HashSet<Integer> newNbrs){
     super(sender);
     this.newLeader = newLeader;
     this.oldLeader1 = m.compLeader;
     this.oldLeader2 = m.externalLeader;
-    this.component = component;
-    this.path = m.path;
+//    this.component = component;
+//    this.path = m.path;
+    this.newNbrs = newNbrs;
   }
 }

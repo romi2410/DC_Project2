@@ -1,11 +1,9 @@
 package dc_project2;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
@@ -20,13 +18,13 @@ public class GHS {
     try{
       StringJoiner sj = new StringJoiner("\n\t");
       rcvdFromNbr.entrySet().forEach(e -> sj.add(e.getKey()+":"+e.getValue()));
-      return sj.toString();
+      return (sj.toString().trim().length()>0) ? sj.toString() : "no messages";
     }catch(NullPointerException e){ return "no messages"; }
   }
 
   MWOEMsg mwoeMsg;
 
-  int parent = -1;  // parent of leader = -1 = synchronizer uid
+  int parent = -1;  // parent of leader = -1
   int leader;
   public boolean isLeader(){  return node.uid==leader;  }
   HashSet<Integer> treeNbrs = new HashSet<Integer>();
@@ -45,8 +43,7 @@ public class GHS {
     mwoeMsg = null;
     for(int uid: rcvdFromNbr.keySet())
       rcvdFromNbr.put(uid, NullMsg.getInstance());
-    if(this.isLeader())
-      broadcast(new SearchMsg(leader, node.uid));
+    broadcast(new SearchMsg(leader, node.uid));
   }
   private void broadcast(Message msg){
     node.neighbors().forEach(nbr -> node.sendTo(nbr, msg));
@@ -62,12 +59,15 @@ public class GHS {
       handleRejectMsg((RejectMsg) msg);
     if(msgType == NewLeaderMsg.class)
       handleNewLeaderMsg((NewLeaderMsg) msg);
+    if(msgType == NewSearchPhaseMsg.class)
+      handleNewSearchPhaseMsg((NewSearchPhaseMsg) msg);
     if(msgType == TerminateMsg.class)
       terminate();
   }
 
   private void handleSearchMsg(SearchMsg m){
-    if(m.sender == parent){
+    if(treeNbrs.contains(m.sender)){
+      parent = m.sender;
       newSearchPhase();
       rcvdFromNbr.put(parent, m);
     }else if(m.leader == leader)
@@ -92,12 +92,14 @@ public class GHS {
 
   private void handleNewLeaderMsg(NewLeaderMsg m){
     leader = m.newLeader;
-    treeNbrs = intersection(node.neighbors(), m.component);
-    parent = (this.isLeader()) ? -1 : m.path.findPrecedingNode(node.uid);
-    newSearchPhase();
+    treeNbrs.addAll(m.newNbrs);
+    node.sendTo(-1, new NewLeaderAckMsg(node.uid));
   }
-  private HashSet intersection(Set a, Set b){ HashSet i = new HashSet(a); i.retainAll(b); return i; }
-
+  private void handleNewSearchPhaseMsg(NewSearchPhaseMsg m){
+    if(this.isLeader()) newSearchPhase();
+    else                TestingMode.print("Unexpected Behavior: non-leader rcvd NewSearchPhaseMsg");
+  }
+  
   private void terminate(){
     String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining("-"+node.uid+", "));
     System.out.println(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs);

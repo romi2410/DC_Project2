@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
-
+import java.util.Arrays;
 
 
 public class Synchronizer {
@@ -23,7 +23,9 @@ public class Synchronizer {
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
   HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
   
-
+  HashMap<Integer, HashSet<Integer>> newNbrs = new HashMap<Integer, HashSet<Integer>>();
+  HashMap<Integer, Boolean> ackedNewLeader = new HashMap<Integer, Boolean>();
+  
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
     for(int nodeUID: nodes.keySet())
       leaders.put(nodeUID, new LeaderToken(nodeUID));
@@ -40,9 +42,18 @@ public class Synchronizer {
     serverUp = true;
   }
   
-  public void handleMsg(MWOEMsg m){
-    LeaderToken sender = leaders.get(m.sender);
-    sender.handleMWOEMsg(m);
+  public void handleMsg(Message msg){
+    Class msgType = msg.getClass();
+    if(msgType == NewLeaderAckMsg.class)
+      handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
+    if(msgType == MWOEMsg.class)    
+      handleMWOEMsg((MWOEMsg) msg);
+  }
+  public void handleNewLeaderAckMsg(NewLeaderAckMsg m){  ackedNewLeader.put(m.sender, true); }
+  public void handleMWOEMsg(MWOEMsg m){
+    LeaderToken leader = leaders.get(m.sender);
+    leader.handleMWOEMsg(m);
+    addMWOEtoNewNbrs(m.externalNode, m.leafnode);
     if(BooleanCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg())){
       leaders = new MergePhase(leaders).getLeaders();
       broadcastNewLeaders();
@@ -51,14 +62,27 @@ public class Synchronizer {
         terminate();
     }
   }
+  private void addMWOEtoNewNbrs(int nodeA, int nodeB){
+    newNbrs.put(nodeA, newNbrs.getOrDefault(nodeA, new HashSet<Integer>()));
+    newNbrs.get(nodeA).add(nodeB);
+    newNbrs.put(nodeB, newNbrs.getOrDefault(nodeB, new HashSet<Integer>()));
+    newNbrs.get(nodeB).add(nodeA);
+  }
   
   private void broadcastNewLeaders(){
     for(LeaderToken leader: leaders.values())
-      for(int node: leader.component)
-        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe, leader.component));
-    for(LeaderToken leader: leaders.values())
+      for(int node: leader.component){
+        ackedNewLeader.put(node, false);
+        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe, newNbrs.getOrDefault(node, new HashSet<Integer>())));
+      }
+    while(!Arrays.asList(ackedNewLeader.values()).contains(false)){}
+    for(LeaderToken leader: leaders.values()){
+      senders.get(leader).send(new NewSearchPhaseMsg(-1));
       leader.resetRcvdMsg();
+    }
+    newNbrs.clear();
   }
+  
   
   private void terminate(){
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);

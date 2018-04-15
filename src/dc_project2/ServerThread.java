@@ -92,7 +92,7 @@ class ClientManagerSynchronizer implements Runnable {
   }
 
   public void handleMsg(String m){
-    MWOEMsg message;
+    Message message;
     try {
       ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
       ObjectInputStream si = new ObjectInputStream(bi);
