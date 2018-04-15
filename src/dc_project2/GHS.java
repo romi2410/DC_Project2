@@ -12,6 +12,8 @@ public class GHS {
   // rcvd msgs
   private HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
   public boolean rcvdFromAllNbrs(){
+    rcvdFromNbr.entrySet().forEach(e -> System.out.print(e.getKey()+":"+e.getValue()));
+    System.out.println();
     return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
   }
   public String rcvdFromNbrs(){
@@ -41,7 +43,7 @@ public class GHS {
   private void newSearchPhase(){
     TestingMode.print(String.valueOf(node.uid) + " is starting a new phase!");
     mwoeMsg = null;
-    for(int uid: rcvdFromNbr.keySet())
+    for(int uid: node.neighbors())
       rcvdFromNbr.put(uid, NullMsg.getInstance());
     broadcast(new SearchMsg(leader, node.uid));
   }
@@ -78,7 +80,6 @@ public class GHS {
 
   private void handleMWOEMsg(MWOEMsg newMwoeMsg){
     rcvdFromNbr.put(newMwoeMsg.sender, newMwoeMsg);
-    newMwoeMsg.path.add(node.uid);
     mwoeMsg = (mwoeMsg != null) ? MWOEMsg.min(mwoeMsg, newMwoeMsg) : newMwoeMsg;
     if(rcvdFromAllNbrs())
       node.sendTo(parent, mwoeMsg);

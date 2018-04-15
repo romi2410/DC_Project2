@@ -85,21 +85,18 @@ class ClientManagerSynchronizer implements Runnable {
   @Override
   public void run() {
     try {
-      String line;
-      BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-      while ((line = in.readLine()) != null){ handleMsg(line);  }
-    } catch(IOException e) { e.printStackTrace(); }
+      Message msg;
+      ObjectInputStream inputStream = new ObjectInputStream(client.getInputStream());
+      try{
+        while ((msg = (Message) inputStream.readObject()) != null){ handleMsg(msg); }
+      }catch(ClassNotFoundException e){
+        System.out.println("Synchronizer's connection to " + client.toString() + " failed; " + e);
+      }
+    } catch(IOException e) {  e.printStackTrace();  }
   }
 
-  public void handleMsg(String m){
-    Message message;
-    try {
-      ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
-      ObjectInputStream si = new ObjectInputStream(bi);
-      message =(MWOEMsg) si.readObject();
-      sync.handleMsg(message);
-     } catch (Exception e) {
-        System.out.println(e);
-     }
+  public void handleMsg(Message m){
+    TestingMode.print(String.valueOf(sync) + " rcvd " + m);
+    sync.handleMsg(m);
   }
 }

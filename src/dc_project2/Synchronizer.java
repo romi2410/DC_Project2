@@ -27,6 +27,7 @@ public class Synchronizer {
   HashMap<Integer, Boolean> ackedNewLeader = new HashMap<Integer, Boolean>();
   
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
+    TestingMode.print("new Synchronizer at thread " + Thread.currentThread().getName());
     for(int nodeUID: nodes.keySet())
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
@@ -51,6 +52,7 @@ public class Synchronizer {
   }
   public void handleNewLeaderAckMsg(NewLeaderAckMsg m){  ackedNewLeader.put(m.sender, true); }
   public void handleMWOEMsg(MWOEMsg m){
+    if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-leaders
     LeaderToken leader = leaders.get(m.sender);
     leader.handleMWOEMsg(m);
     addMWOEtoNewNbrs(m.externalNode, m.leafnode);
@@ -161,6 +163,14 @@ class MergePhase{
   }
   
   public MergePhase(HashMap<Integer, LeaderToken> leadersToMerge){
+    
+    TestingMode.print("new MergePhase at thread " + Thread.currentThread().getName());
+    
+    TestingMode.print("Synchronizer is merging the following leaders: ");
+    for(LeaderToken leader: leadersToMerge.values())
+      TestingMode.print(leader.uid+" ");
+    TestingMode.print("\n");
+    
     leaders = leadersToMerge;
     
     // Iterator is used for safety for deleting elements from leaders while iterating over its elements
@@ -178,19 +188,20 @@ class MergePhase{
   private void merge(LeaderToken leaderA, LeaderToken leaderB, MWOEMsg m){
     // new leader will be the larger of the two nodes incident to the core edge
     int newLeaderUID = Math.max(m.externalNode, m.leafnode);
-    leaders.put(newLeaderUID, new LeaderToken(newLeaderUID, leaderA, leaderB));
-    
-    leaderA.wantsToMergeWith = newLeaderUID;
-    leaderB.wantsToMergeWith = newLeaderUID;
+    LeaderToken newLeader = new LeaderToken(newLeaderUID, leaderA, leaderB);
     
     //everyone who wanted to absorb into leaderA or leaderB
       //will now absorb into newLeader
+    leaderA.wantsToMergeWith = newLeaderUID;
+    leaderB.wantsToMergeWith = newLeaderUID;
     for(LeaderToken leader: leaders.values())
       if(leader.wantsToMergeWith == leaderA.uid || leader.wantsToMergeWith == leaderB.uid)
         leader.wantsToMergeWith = newLeaderUID;
     
+    // execute merge
     leaders.remove(leaderA.uid);
     leaders.remove(leaderB.uid);
+    leaders.put(newLeaderUID, newLeader);
   }
   
   private void absorb(LeaderToken leaderFrom, LeaderToken leaderTo){
