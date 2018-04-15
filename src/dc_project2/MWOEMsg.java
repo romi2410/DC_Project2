@@ -1,48 +1,49 @@
 package dc_project2;
-import java.util.Deque;
-import java.util.ArrayDeque;
 
 // Convergecast
-public class MWOEMsg extends Message implements Comparable<MWOEMsg>{
-    int compLeader;
-    int externalLeader;
-    int leafnode;
-    int externalNode;
-    double weight;
-    Deque<Integer> path = new ArrayDeque<Integer>();
-    
-    public MWOEMsg(int compLeader, int externalLeader, int leafnode, int extnode, double weight, int sender){
-      super(sender);
-      this.compLeader = compLeader;
-      this.externalLeader = externalLeader;
-      this.leafnode = leafnode;
-      this.externalNode = extnode;
-      this.weight = weight;
-      path.add(externalNode);
-    }
-    
-    public void appendToPath(int sender){
-      path.add(sender);
-    }
-    
-    public int compareTo(MWOEMsg m){
-      int weightComparison = Double.compare(this.weight, m.weight);
-      if(weightComparison != 0)
-        return weightComparison;
+public class MWOEMsg extends Message{
+  int compLeader;
+  int externalLeader;
+  int leafnode;
+  int externalNode;
+  double weight;
+  Path path;
+
+  public MWOEMsg(int compLeader, int externalLeader, int leafnode, int extnode, double weight, int sender){
+    super(sender);
+    this.compLeader = compLeader;
+    this.externalLeader = externalLeader;
+    this.leafnode = leafnode;
+    this.externalNode = extnode;
+    this.weight = weight;
+    this.path = new Path(extnode);
+  }
+
+  public static MWOEMsg min(MWOEMsg a, MWOEMsg b){
+    if(a.weight > b.weight)
+      return b;
+    else if(a.weight < b.weight)
+      return a;
+    else{
+      int a_BigLeader = Math.max(a.compLeader, a.externalLeader);
+      int b_BigLeader = Math.max(b.compLeader, b.externalLeader);
+      if(a_BigLeader > b_BigLeader)
+        return a;
+      if(a_BigLeader < b_BigLeader)
+        return b;
       else{
-        int bigLeaderComparison = Integer.compare(
-                Math.max(this.compLeader, this.externalLeader), 
-                Math.max(m.compLeader, m.externalLeader)
-        );
-        if(bigLeaderComparison != 0)
-          return bigLeaderComparison;
+        int a_SmallLeader = Math.min(a.compLeader, a.externalLeader);
+        int b_SmallLeader = Math.min(b.compLeader, b.externalLeader);
+        if(a_SmallLeader > b_SmallLeader)
+          return a;
+        else if(a_SmallLeader < b_SmallLeader)
+          return b;
         else{
-          int smallLeaderComparison = Integer.compare(
-                  Math.min(this.compLeader, this.externalLeader), 
-                  Math.min(m.compLeader, m.externalLeader)
-          );
-          return smallLeaderComparison;
+          TestingMode.print("Unexpected Scenario: comparing two equal MWOEMsgs,\n" 
+                  + a.toString() + "\n and\n" + b.toString());
+          return a;
         }
       }
     }
+  }
 }

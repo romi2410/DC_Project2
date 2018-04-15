@@ -1,19 +1,12 @@
 package dc_project2;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-
+import java.util.Arrays;
 
 
 public class Synchronizer {
@@ -30,30 +23,38 @@ public class Synchronizer {
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
   HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
   
-
+  HashMap<Integer, HashSet<Integer>> newNbrs = new HashMap<Integer, HashSet<Integer>>();
+  HashMap<Integer, Boolean> ackedNewLeader = new HashMap<Integer, Boolean>();
+  
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
-    System.out.println("Inside Synchronizer constructor");
     for(int nodeUID: nodes.keySet())
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
     startServer();
-    if(TestingMode.isOn())
-      startPrintThread();
-    System.out.println("Terminating Synchronizer constructor");
+    if(TestingMode.isOn()) TestingMode.startPrintThread(this);
   }
   
   private void startServer(){
     ServerThread server = new ServerThread(this, port);
     server.start();
-    while(!server.up){ Wait.aSec(); }
+    while(!server.up){ Wait.threeSeconds(); }
     serverUp = true;
   }
   
-  public void handleMsg(MWOEMsg m){
-    LeaderToken sender = leaders.get(m.sender);
-    sender.handleMWOEMsg(m);
-    if(allTrue(leaders.values(), LeaderToken.rcvdMsg())){
+  public void handleMsg(Message msg){
+    Class msgType = msg.getClass();
+    if(msgType == NewLeaderAckMsg.class)
+      handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
+    if(msgType == MWOEMsg.class)    
+      handleMWOEMsg((MWOEMsg) msg);
+  }
+  public void handleNewLeaderAckMsg(NewLeaderAckMsg m){  ackedNewLeader.put(m.sender, true); }
+  public void handleMWOEMsg(MWOEMsg m){
+    LeaderToken leader = leaders.get(m.sender);
+    leader.handleMWOEMsg(m);
+    addMWOEtoNewNbrs(m.externalNode, m.leafnode);
+    if(BooleanCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg())){
       leaders = new MergePhase(leaders).getLeaders();
       broadcastNewLeaders();
       level++;
@@ -61,14 +62,27 @@ public class Synchronizer {
         terminate();
     }
   }
+  private void addMWOEtoNewNbrs(int nodeA, int nodeB){
+    newNbrs.put(nodeA, newNbrs.getOrDefault(nodeA, new HashSet<Integer>()));
+    newNbrs.get(nodeA).add(nodeB);
+    newNbrs.put(nodeB, newNbrs.getOrDefault(nodeB, new HashSet<Integer>()));
+    newNbrs.get(nodeB).add(nodeA);
+  }
   
   private void broadcastNewLeaders(){
     for(LeaderToken leader: leaders.values())
-      for(int node: leader.component)
-        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe));
-    for(LeaderToken leader: leaders.values())
+      for(int node: leader.component){
+        ackedNewLeader.put(node, false);
+        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe, newNbrs.getOrDefault(node, new HashSet<Integer>())));
+      }
+    while(!Arrays.asList(ackedNewLeader.values()).contains(false)){}
+    for(LeaderToken leader: leaders.values()){
+      senders.get(leader).send(new NewSearchPhaseMsg(-1));
       leader.resetRcvdMsg();
+    }
+    newNbrs.clear();
   }
+  
   
   private void terminate(){
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
@@ -79,27 +93,16 @@ public class Synchronizer {
   public void connectToNodes(Set<Node> nodes){
     for(Node node: nodes)
       senders.put(node.uid, new Sender(node.hostname, node.port, uid));
-    while(!allTrue(senders.values(), Sender.successfullyConnected())){Wait.aSec();}
+    while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.threeSeconds();}
     sendersUp = true;
   }
-  private boolean allTrue(Collection c, Predicate p){ return c.stream().allMatch(p); }
   
-  private void startPrintThread(){
-    (new Thread() {
-      @Override
-      public void run() {
-        while(true){
-          Wait.thirtySeconds();
-          printAll();
-        }
-      }
-    }).start();
-  }
-  private void printAll(){
+  public String toString(){
+    StringJoiner sj = new StringJoiner("\n");
+    sj.add("Level: " + level);
     for(LeaderToken leader: leaders.values())
-      System.out.println(leader.toString());
-    //for(Sender sender: senders.values())
-    //  System.out.println(sender.toString());
+      sj.add(leader.toString());
+    return sj.toString();
   }
 }
 
@@ -107,51 +110,6 @@ public class Synchronizer {
 
 
   /* --- HELPER CLASSES --- */
-
-class Sender{
-  String serializedMsg = " ";
-  int ownerUID;
-  boolean successfullyConnected = false;
-  public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
-  
-  Sender(String nodeHostname, int nodePort, int ownerUID){
-    this.ownerUID = ownerUID;
-    while(!successfullyConnected) try {
-        Socket s = new Socket(nodeHostname, nodePort);
-        BufferedWriter out = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-        (new Thread() {
-            @Override
-            public void run() {
-              while(true){
-                try                 { out.write(serializedMsg); }
-                catch(IOException e){ e.printStackTrace(); }
-                Wait.aSec();
-              }
-            }
-        }).start();
-        successfullyConnected = true;
-      } catch (UnknownHostException e){ e.printStackTrace();
-      } catch (IOException e)         { e.printStackTrace();
-    }
-
-    TestingMode.print("Number of threads after starting edge " + ownerUID + ", " + nodePort + ": " + TestingMode.threadCount());
-    try{
-      TimeUnit.SECONDS.sleep(1);
-    } catch(InterruptedException e){
-      System.out.println(e);
-    }
-  }
-  
-  public void send(Message msg){
-    msg.sender = ownerUID;
-    try{
-      serializedMsg = msg.serialize();
-    } catch (IOException e) {
-      System.out.println(e);
-      System.out.println("Attempt to serialize " + msg.toString() + " failed");
-    }
-  }
-}
 
 
 class LeaderToken{
