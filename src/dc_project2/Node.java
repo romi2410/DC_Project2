@@ -37,7 +37,7 @@ class Node{
     weights.put(nbrUID, w);
   }
   public void connectToSynchronizer(String syncHostname, int syncPort){
-    senderToSynchronizer = new Sender(syncHostname, syncPort, -1);
+    senderToSynchronizer = new Sender(syncHostname, syncPort, uid);
   }
   public void initGHS(){
     System.out.println(this.toString());

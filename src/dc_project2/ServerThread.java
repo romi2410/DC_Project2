@@ -51,62 +51,63 @@ public class ServerThread extends Thread{
 
 
 class ClientManager implements Runnable {
-    Socket client;
-    Node owner;
-    public ClientManager(Socket client, Node owner) { this.client = client; this.owner = owner; }
+  Socket client;
+  Node owner;
+  public ClientManager(Socket client, Node owner) { this.client = client; this.owner = owner; }
 
-    @Override
-    public void run() {
-      TestingMode.print(String.valueOf(owner.uid) + " is running a ClientManager on " + client.toString());
-      try {
-        String line;
-        BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-        while ((line = in.readLine()) != null){ handleMsg(line); }
-      } catch(IOException e) {  e.printStackTrace();  }
-    }
-    
-    public void handleMsg(String m){
-      TestingMode.print(String.valueOf(owner) + " rcvd " + m);
-      Object message;
-      try {
-        message = (new ObjectInputStream(new ByteArrayInputStream(m.getBytes()))).readObject();
-        owner.ghs.handleMsg(message);
-      } catch (Exception e) { System.out.println(e);  }
-    }
+  @Override
+  public void run() {
+    TestingMode.print(String.valueOf(owner.uid) + " is running a ClientManager on " + client.toString());
+    try {
+      String line;
+      BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+      line = in.readLine();
+      while ((line = in.readLine()) != null){ handleMsg(line); }
+    } catch(IOException e) {  e.printStackTrace();  }
+  }
+
+  public void handleMsg(String m){
+    TestingMode.print(String.valueOf(owner) + " rcvd " + m);
+    Object message;
+    try {
+      message = (new ObjectInputStream(new ByteArrayInputStream(m.getBytes()))).readObject();
+      owner.ghs.handleMsg(message);
+    } catch (Exception e) { System.out.println(e);  }
+  }
 }
 
 class ClientManagerSynchronizer implements Runnable {
-    private Socket client;
-    Synchronizer sync;
+  private Socket client;
+  Synchronizer sync;
 
-    public ClientManagerSynchronizer(Socket client, Synchronizer sync) {
-      this.client = client;
-      this.sync = sync;
-    }
+  public ClientManagerSynchronizer(Socket client, Synchronizer sync) {
+    this.client = client;
+    this.sync = sync;
+  }
 
-    @Override
-    public void run() {
-      try {
-            String line;
-            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-            
-            while ((line = in.readLine()) != null){
-                handleMsg(line);
-            }
-	} catch(IOException e) {
-            e.printStackTrace();
-      }
+  @Override
+  public void run() {
+    try {
+          String line;
+          BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+
+          while ((line = in.readLine()) != null){
+              handleMsg(line);
+          }
+  } catch(IOException e) {
+          e.printStackTrace();
     }
-    
-    public void handleMsg(String m){
-      MWOEMsg message;
-      try {
-         ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
-         ObjectInputStream si = new ObjectInputStream(bi);
-         message =(MWOEMsg) si.readObject();
-         sync.handleMsg(message);
-       } catch (Exception e) {
-           System.out.println(e);
-       }
-    }
+  }
+
+  public void handleMsg(String m){
+    MWOEMsg message;
+    try {
+      ByteArrayInputStream bi = new ByteArrayInputStream(m.getBytes());
+      ObjectInputStream si = new ObjectInputStream(bi);
+      message =(MWOEMsg) si.readObject();
+      sync.handleMsg(message);
+     } catch (Exception e) {
+        System.out.println(e);
+     }
+  }
 }

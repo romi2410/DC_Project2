@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 
 
 public class Sender{
-  String serializedMsg = " ";
+  String serializedMsg;
   int ownerUID;
   boolean successfullyConnected = false;
   public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
@@ -24,10 +24,14 @@ public class Sender{
           @Override
           public void run() {
             while(true){
-              try                 { out.write(serializedMsg); 
-                if(serializedMsg.trim().length()>0)
-                  TestingMode.print(ownerUID + " sent " + serializedMsg + " to " + rcvrPort);}
-              catch(IOException e){ e.printStackTrace(); }
+              try{
+                if(serializedMsg != null && serializedMsg.trim().length()>0){
+                  out.write(serializedMsg);
+                  TestingMode.print(ownerUID + " sent " + serializedMsg + " to " + rcvrPort);
+                }
+                out.newLine();
+                out.flush();
+              }catch(IOException e){ e.printStackTrace(); }
               Wait.aSec();
             }
           }

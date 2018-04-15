@@ -34,6 +34,7 @@ public class GHS {
   }
 
   private void newSearchPhase(){
+    TestingMode.print(String.valueOf(node.uid) + " is starting a new phase!");
     for(int uid: rcvdFromNbr.keySet())
       rcvdFromNbr.put(uid, null);
     if(this.isLeader())
@@ -47,15 +48,15 @@ public class GHS {
     System.out.println(node.uid + "'s GHS is handling " + msg.toString());
     Class msgType = msg.getClass();
     if(msgType == SearchMsg.class)
-        handleSearchMsg((SearchMsg) msg);
+      handleSearchMsg((SearchMsg) msg);
     if(msgType == MWOEMsg.class)    
-        handleMWOEMsg((MWOEMsg) msg);
+      handleMWOEMsg((MWOEMsg) msg);
     if(msgType == RejectMsg.class)    
-        handleRejectMsg((RejectMsg) msg);
+      handleRejectMsg((RejectMsg) msg);
     if(msgType == NewLeaderMsg.class)
-        handleNewLeaderMsg((NewLeaderMsg) msg);
+      handleNewLeaderMsg((NewLeaderMsg) msg);
     if(msgType == TerminateMsg.class)
-        terminate();
+      terminate();
   }
 
   private void handleSearchMsg(SearchMsg m){
