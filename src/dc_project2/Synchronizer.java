@@ -13,8 +13,6 @@ public class Synchronizer extends Process{
   
   int uid = -1;
   int level = 0;
-  String hostname;
-  int port;
   
   // use for synchronizing GHS start
   boolean serverUp = false;
@@ -54,7 +52,7 @@ public class Synchronizer extends Process{
   }
   public void handleNewLeaderAckMsg(NewLeaderAckMsg m){  ackedNewLeader.put(m.sender, true); }
   public void handleMWOEMsg(MWOEMsg m){
-    if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-leaders
+    if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-mergedLeaders
     LeaderToken leader = leaders.get(m.sender);
     leader.handleMWOEMsg(m);
     addMWOEtoNewNbrs(m.externalNode, m.leafnode);
@@ -123,11 +121,9 @@ class LeaderToken{
   boolean rcvdMsg = false;
   public static Predicate<LeaderToken> rcvdMsg(){ return leader->leader.rcvdMsg; }
   
-  public LeaderToken(int uid){
-    this.uid = uid;   component.add(uid);
-  }
-  public LeaderToken(int uid, LeaderToken oldLeaderA, LeaderToken oldLeaderB){
-    this(uid);
+  public LeaderToken(int uid){  this.uid = uid;   component.add(uid); }
+  public LeaderToken(LeaderToken oldLeaderA, LeaderToken oldLeaderB){
+    this(Math.max(oldLeaderA.mwoe.externalNode, oldLeaderA.mwoe.leafnode));
     component.addAll(oldLeaderA.component);
     component.addAll(oldLeaderB.component);
   }
@@ -136,9 +132,8 @@ class LeaderToken{
     mwoe = m;
     rcvdMsg = true;
   }
-  public void resetRcvdMsg(){
-    rcvdMsg = false;
-  }
+  public void    resetRcvdMsg()                      { rcvdMsg = false;                     }
+  public boolean wantsToMergeWith(LeaderToken leader){ return wantsToMergeWith==leader.uid; }
   @Override
   public String toString(){
     StringJoiner sj = new StringJoiner(" ");
@@ -158,79 +153,49 @@ class LeaderToken{
 }
 
 
+
 class MergePhase{
-  HashMap<Integer, LeaderToken> leaders;
-  public HashMap<Integer, LeaderToken> getLeaders(){ return leaders; }
+  HashMap<Integer, LeaderToken> mergedLeaders;
+  public HashMap<Integer, LeaderToken> getLeaders(){ return mergedLeaders; }
   
   public MergePhase(HashMap<Integer, LeaderToken> leadersToMerge){
     TestingMode.print("Synchronizer is merging the following leaders: ");
     for(LeaderToken leader: leadersToMerge.values())
       TestingMode.print(leader.uid+" ");
-    TestingMode.print("\n");
     
-    HashMap<Integer, LeaderToken> mergedLeaders = mergeLeaders(leadersToMerge);
-    leaders = absorbLeaders(leadersToMerge, mergedLeaders);
+    mergedLeaders = new HashMap<Integer, LeaderToken>();
+    mergeLeaders(leadersToMerge);
+    absorbLeaders(leadersToMerge);
   }
   
-  private HashMap<Integer, LeaderToken> mergeLeaders(HashMap<Integer, LeaderToken> leaders){
-    HashMap<Integer, LeaderToken> newLeaders = new HashMap<Integer, LeaderToken>();
-    
-    Iterator<LeaderToken> leaderIter = leaders.values().iterator(); 
-    while(leaderIter.hasNext()){
-      LeaderToken leaderFrom = leaderIter.next();
-      MWOEMsg m = leaderFrom.mwoe;
-      LeaderToken leaderTo = leaders.get(leaderFrom.wantsToMergeWith);
-      if(leaderTo.wantsToMergeWith == leaderFrom.uid){
-        int newLeaderUID = Math.max(m.externalNode, m.leafnode);
-        LeaderToken newLeader = new LeaderToken(newLeaderUID, leaderFrom, leaderTo);
-        leaderFrom.wantsToMergeWith = newLeaderUID; newLeaders.put(leaderFrom.uid, leaderFrom);
-        leaderTo.wantsToMergeWith = newLeaderUID;   newLeaders.put(leaderTo.uid, leaderTo);
-        for(LeaderToken leader: leaders.values())
-          if(leader.wantsToMergeWith == leaderFrom.uid || leader.wantsToMergeWith == leaderTo.uid){
-            leader.wantsToMergeWith = newLeaderUID;   newLeaders.put(leader.uid, leader);
-          }
-        newLeaders.put(newLeaderUID, newLeader);
-      }
+  private void mergeLeaders(HashMap<Integer, LeaderToken> leadersToMerge){
+    for(LeaderToken leaderFrom: leadersToMerge.values()){
+      LeaderToken leaderTo = leadersToMerge.get(leaderFrom.wantsToMergeWith);
+      if(leaderTo.wantsToMergeWith(leaderFrom))
+        merge(leaderFrom, leaderTo, leadersToMerge);
     }
-    return newLeaders;
   }
-  private HashMap<Integer, LeaderToken> absorbLeaders(HashMap<Integer, LeaderToken> leaders, HashMap<Integer, LeaderToken> mergedLeaders){
-    for(LeaderToken leader: leaders.values()){
-      while(!mergedLeaders.containsKey(leader.wantsToMergeWith))
-        leader.wantsToMergeWith = leaders.get(leader.wantsToMergeWith).wantsToMergeWith;
-      mergedLeaders.get(leader.wantsToMergeWith).component.addAll(leader.component);
-    }
-    return mergedLeaders;
+  private void merge(LeaderToken leaderFrom, LeaderToken leaderTo, 
+        HashMap<Integer, LeaderToken> leadersToMerge){
+    LeaderToken mergedLeader = new LeaderToken(leaderFrom, leaderTo);
+    leaderFrom.wantsToMergeWith = mergedLeader.uid; mergedLeaders.put(leaderFrom.uid, leaderFrom);
+    leaderTo.wantsToMergeWith = mergedLeader.uid;   mergedLeaders.put(leaderTo.uid, leaderTo);
+    for(LeaderToken leader: leadersToMerge.values())
+      if(leader.wantsToMergeWith(leaderFrom) || leader.wantsToMergeWith(leaderTo))          {
+        leader.wantsToMergeWith = mergedLeader.uid; mergedLeaders.put(leader.uid, leader);  }
+    mergedLeaders.put(mergedLeader.uid, mergedLeader);
   }
-  
-  private void merge(LeaderToken leaderA, LeaderToken leaderB, MWOEMsg m){
-    // new leader will be the larger of the two nodes incident to the core edge
-    int newLeaderUID = Math.max(m.externalNode, m.leafnode);
-    LeaderToken newLeader = new LeaderToken(newLeaderUID, leaderA, leaderB);
-    
-    //everyone who wanted to absorb into leaderA or leaderB
-      //will now absorb into newLeader
-    leaderA.wantsToMergeWith = newLeaderUID;
-    leaderB.wantsToMergeWith = newLeaderUID;
+  private void absorbLeaders(HashMap<Integer, LeaderToken> leaders){
     for(LeaderToken leader: leaders.values())
-      if(leader.wantsToMergeWith == leaderA.uid || leader.wantsToMergeWith == leaderB.uid)
-        leader.wantsToMergeWith = newLeaderUID;
-    
-    // execute merge
-    leaders.remove(leaderA.uid);
-    leaders.remove(leaderB.uid);
-    leaders.put(newLeaderUID, newLeader);
+      absorb(leader);
   }
-  
-  private void absorb(LeaderToken leaderFrom, LeaderToken leaderTo){
-    leaderTo.component.addAll(leaderFrom.component);
-    
-    //everyone who wanted to absorb into leaderFrom
-      //will now merge with leaderTo
-    for(LeaderToken leader: leaders.values())
-      if(leader.wantsToMergeWith == leaderFrom.uid)
-        leader.wantsToMergeWith = leaderTo.uid;
-    
-    leaders.remove(leaderFrom.uid);
+  private void absorb(LeaderToken leader){
+    LeaderToken newLeader = findNewLeader(leader);
+    newLeader.component.addAll(leader.component);
+  }
+  private LeaderToken findNewLeader(LeaderToken leader){
+    while(!mergedLeaders.containsKey(leader.wantsToMergeWith))
+      leader.wantsToMergeWith = this.mergedLeaders.get(leader.wantsToMergeWith).wantsToMergeWith;
+    return mergedLeaders.get(leader.wantsToMergeWith);
   }
 }

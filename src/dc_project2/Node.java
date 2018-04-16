@@ -7,9 +7,6 @@ import java.util.StringJoiner;
 
 class Node extends Process{
   // node stuff
-  int uid;
-  int port;
-  String hostname;
   GHS ghs;
 
   // neighbor stuff
