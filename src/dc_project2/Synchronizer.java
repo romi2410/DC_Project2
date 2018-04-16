@@ -9,7 +9,7 @@ import java.util.function.Predicate;
 import java.util.Arrays;
 
 
-public class Synchronizer {
+public class Synchronizer extends Process{
   
   int uid = -1;
   int level = 0;
@@ -160,14 +160,9 @@ class LeaderToken{
 
 class MergePhase{
   HashMap<Integer, LeaderToken> leaders;
-  public HashMap<Integer, LeaderToken> getLeaders(){
-    return leaders;
-  }
+  public HashMap<Integer, LeaderToken> getLeaders(){ return leaders; }
   
   public MergePhase(HashMap<Integer, LeaderToken> leadersToMerge){
-    
-    TestingMode.print("new MergePhase at thread " + Thread.currentThread().getName());
-    
     TestingMode.print("Synchronizer is merging the following leaders: ");
     for(LeaderToken leader: leadersToMerge.values())
       TestingMode.print(leader.uid+" ");

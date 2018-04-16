@@ -5,7 +5,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringJoiner;
 
-class Node{
+class Node extends Process{
   // node stuff
   int uid;
   int port;
@@ -58,5 +58,9 @@ class Node{
     StringJoiner sb = new StringJoiner(" ");
     sb.add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port));
     return sb.toString();
+  }
+  
+  public synchronized void handleMsg(Message msg){
+    ghs.handleMsg(msg);
   }
 }
