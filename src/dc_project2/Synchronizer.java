@@ -42,54 +42,68 @@ public class Synchronizer extends Process{
   }
   
   public synchronized void handleMsg(Message msg){
-    synchronized(this){
-      Class msgType = msg.getClass();
-      if(msgType == NewLeaderAckMsg.class)
-        handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
-      else if(msgType == MWOEMsg.class)    
-        handleMWOEMsg((MWOEMsg) msg);
-    }
+    Class msgType = msg.getClass();
+    if(msgType == NewLeaderAckMsg.class)
+      handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
+    else if(msgType == MWOEMsg.class)    
+      handleMWOEMsg((MWOEMsg) msg);
   }
   public void handleNewLeaderAckMsg(NewLeaderAckMsg m){  ackedNewLeader.put(m.sender, true); }
   public void handleMWOEMsg(MWOEMsg m){
     if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-mergedLeaders
     LeaderToken leader = leaders.get(m.sender);
     leader.handleMWOEMsg(m);
-    addMWOEtoNewNbrs(m.externalNode, m.leafnode);
-    if(BooleanCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg())){
-      leaders = new MergePhase(leaders).getLeaders();
-      broadcastNewLeaders();
-      level++;
-      if(leaders.size()==1)
-        terminate();
+    addNewNbrs(m.externalNode, m.leafnode);
+    if(BooleanCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg()))
+      mergePhase(leaders);
+  }
+  private void mergePhase(HashMap<Integer, LeaderToken> leaders){
+    leaders = new MergePhase(leaders).getLeaders();
+    TestingMode.print("Merge Phase at level " + level + " complete");
+    broadcastNewLeaders();
+    TestingMode.print("New leaders have been broadcast");
+    level++;
+    if(leaders.size()==1)
+      terminate();
+    else{
+      TestingMode.print("Number of Leaders: " + leaders.size());
+      for(LeaderToken leader: leaders.values())
+        sendNewSearchPhaseMsg(leader);
     }
   }
-  private void addMWOEtoNewNbrs(int nodeA, int nodeB){
-    newNbrs.put(nodeA, newNbrs.getOrDefault(nodeA, new HashSet<Integer>()));
-    newNbrs.get(nodeA).add(nodeB);
-    newNbrs.put(nodeB, newNbrs.getOrDefault(nodeB, new HashSet<Integer>()));
-    newNbrs.get(nodeB).add(nodeA);
+  private void addNewNbrs(int nodeA, int nodeB){
+    addNewEdge(nodeA, nodeB);
+    addNewEdge(nodeB, nodeA);
+  }
+  private void addNewEdge(int nodeFrom, int nodeTo){
+    if(!newNbrs.containsKey(nodeFrom))
+      newNbrs.put(nodeFrom, new HashSet<Integer>());
+    newNbrs.get(nodeFrom).add(nodeTo);
   }
   
   private void broadcastNewLeaders(){
     for(LeaderToken leader: leaders.values())
-      for(int node: leader.component){
-        ackedNewLeader.put(node, false);
-        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, newNbrs.getOrDefault(node, new HashSet<Integer>())));
-      }
-    while(!Arrays.asList(ackedNewLeader.values()).contains(false)){}
-    for(LeaderToken leader: leaders.values()){
-      senders.get(leader).send(new NewSearchPhaseMsg(-1));
-      leader.resetRcvdMsg();
-    }
+      for(int node: leader.component)
+        sendNewLeaderMsg(node, leader);
+    while(BooleanCollection.allTrue(ackedNewLeader)){ Wait.aSec(); }
     newNbrs.clear();
   }
-  
+  private void sendNewLeaderMsg(int node, LeaderToken leader){
+    ackedNewLeader.put(node, false);
+    HashSet<Integer> addedNbrs = newNbrs.getOrDefault(node, new HashSet<Integer>());
+    NewLeaderMsg newLeaderMsg = new NewLeaderMsg(uid, leader.uid, addedNbrs);
+    senders.get(node).send(newLeaderMsg);
+  }
+  private void sendNewSearchPhaseMsg(LeaderToken leader){
+    senders.get(leader).send(new NewSearchPhaseMsg(-1));
+    leader.resetRcvdMsg();
+  }
   
   private void terminate(){
+    TestingMode.print("TERMINATING");
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
-    for(Integer node: senders.keySet())
-      senders.get(node).send(terminateMsg);
+    for(Sender sender: senders.values())
+      sender.send(terminateMsg);
   }
   
   public void connectToNodes(Set<Node> nodes){
