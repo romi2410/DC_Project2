@@ -17,6 +17,11 @@ public class MWOEMsg extends Message{
     this.weight = weight;
   }
 
+  public static int newLeaderUID(MWOEMsg m1, MWOEMsg m2){
+    assert Math.max(m1.externalNode, m1.leafnode) == Math.max(m2.externalNode, m2.leafnode);
+    return Math.max(m1.externalNode, m1.leafnode);
+  }
+          
   public static MWOEMsg min(MWOEMsg a, MWOEMsg b){
     if(a.weight > b.weight)
       return b;

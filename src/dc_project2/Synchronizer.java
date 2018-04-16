@@ -122,10 +122,9 @@ class LeaderToken{
   public static Predicate<LeaderToken> rcvdMsg(){ return leader->leader.rcvdMsg; }
   
   public LeaderToken(int uid){  this.uid = uid;   component.add(uid); }
-  public LeaderToken(LeaderToken oldLeaderA, LeaderToken oldLeaderB){
-    this(Math.max(oldLeaderA.mwoe.externalNode, oldLeaderA.mwoe.leafnode));
-    component.addAll(oldLeaderA.component);
-    component.addAll(oldLeaderB.component);
+  public LeaderToken(LeaderToken leaderA, LeaderToken leaderB){
+    this(MWOEMsg.newLeaderUID(leaderA.mwoe, leaderB.mwoe));
+    absorb(leaderA); absorb(leaderB);
   }
   public void handleMWOEMsg(MWOEMsg m){
     wantsToMergeWith = m.externalLeader;
@@ -134,6 +133,7 @@ class LeaderToken{
   }
   public void    resetRcvdMsg()                      { rcvdMsg = false;                     }
   public boolean wantsToMergeWith(LeaderToken leader){ return wantsToMergeWith==leader.uid; }
+  public void    absorb(LeaderToken food)            { component.addAll(food.component);    }
   @Override
   public String toString(){
     StringJoiner sj = new StringJoiner(" ");
@@ -166,24 +166,29 @@ class MergePhase{
     mergedLeaders = new HashMap<Integer, LeaderToken>();
     mergeLeaders(leadersToMerge);
     absorbLeaders(leadersToMerge);
+    
+    TestingMode.print("Synchronizer has produced the following leaders: ");
+    for(LeaderToken leader: mergedLeaders.values())
+      TestingMode.print(leader.uid+" ");
   }
   
   private void mergeLeaders(HashMap<Integer, LeaderToken> leadersToMerge){
-    for(LeaderToken leaderFrom: leadersToMerge.values()){
-      LeaderToken leaderTo = leadersToMerge.get(leaderFrom.wantsToMergeWith);
-      if(leaderTo.wantsToMergeWith(leaderFrom))
-        merge(leaderFrom, leaderTo, leadersToMerge);
+    for(LeaderToken leaderA: leadersToMerge.values()){
+      LeaderToken leaderB = leadersToMerge.get(leaderA.wantsToMergeWith);
+      if(leaderB.wantsToMergeWith(leaderA))
+        merge(leaderA, leaderB, leadersToMerge);
     }
   }
-  private void merge(LeaderToken leaderFrom, LeaderToken leaderTo, 
+  private void merge(LeaderToken leaderA, LeaderToken leaderB,
         HashMap<Integer, LeaderToken> leadersToMerge){
-    LeaderToken mergedLeader = new LeaderToken(leaderFrom, leaderTo);
-    leaderFrom.wantsToMergeWith = mergedLeader.uid; mergedLeaders.put(leaderFrom.uid, leaderFrom);
-    leaderTo.wantsToMergeWith = mergedLeader.uid;   mergedLeaders.put(leaderTo.uid, leaderTo);
+    LeaderToken mergedLeader = new LeaderToken(leaderA, leaderB);
+    leaderA.wantsToMergeWith = mergedLeader.uid; mergedLeaders.put(leaderA.uid, leaderA);
+    leaderB.wantsToMergeWith = mergedLeader.uid;   mergedLeaders.put(leaderB.uid, leaderB);
     for(LeaderToken leader: leadersToMerge.values())
-      if(leader.wantsToMergeWith(leaderFrom) || leader.wantsToMergeWith(leaderTo))          {
+      if(leader.wantsToMergeWith(leaderA) || leader.wantsToMergeWith(leaderB))          {
         leader.wantsToMergeWith = mergedLeader.uid; mergedLeaders.put(leader.uid, leader);  }
     mergedLeaders.put(mergedLeader.uid, mergedLeader);
+    TestingMode.print(leaderA.uid + " and " + leaderB.uid + " merged into " + mergedLeader.uid);
   }
   private void absorbLeaders(HashMap<Integer, LeaderToken> leaders){
     for(LeaderToken leader: leaders.values())
@@ -191,7 +196,13 @@ class MergePhase{
   }
   private void absorb(LeaderToken leader){
     LeaderToken newLeader = findNewLeader(leader);
-    newLeader.component.addAll(leader.component);
+    if(newLeader.uid != leader.uid){
+      newLeader.absorb(leader);
+      mergedLeaders.remove(leader.uid);
+      TestingMode.print(leader.uid + " was absorbed into " + newLeader.uid);
+      TestingMode.print(leader.toString());
+      TestingMode.print(newLeader.toString());
+    }
   }
   private LeaderToken findNewLeader(LeaderToken leader){
     while(!mergedLeaders.containsKey(leader.wantsToMergeWith))
