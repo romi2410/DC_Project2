@@ -19,7 +19,7 @@ class Node extends Process{
   // used by DC_Project2 for verification before initiating GHS
   boolean serverUp = false;
   public void haltUntilSendersUp(){
-    while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected()))
+    while(!BoolCollection.allTrue(senders.values(), Sender.successfullyConnected()))
       { Wait.threeSeconds(); }
   }
 

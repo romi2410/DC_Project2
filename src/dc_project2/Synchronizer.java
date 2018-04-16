@@ -54,7 +54,7 @@ public class Synchronizer extends Process{
     LeaderToken leader = leaders.get(m.sender);
     leader.handleMWOEMsg(m);
     addNewNbrs(m.externalNode, m.leafnode);
-    if(BooleanCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg()))
+    if(BoolCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg()))
       mergePhase(leaders);
   }
   private void mergePhase(HashMap<Integer, LeaderToken> leaders){
@@ -71,10 +71,7 @@ public class Synchronizer extends Process{
         sendNewSearchPhaseMsg(leader);
     }
   }
-  private void addNewNbrs(int nodeA, int nodeB){
-    addNewEdge(nodeA, nodeB);
-    addNewEdge(nodeB, nodeA);
-  }
+  private void addNewNbrs(int nodeA, int nodeB){  addNewEdge(nodeA, nodeB); addNewEdge(nodeB, nodeA); }
   private void addNewEdge(int nodeFrom, int nodeTo){
     if(!newNbrs.containsKey(nodeFrom))
       newNbrs.put(nodeFrom, new HashSet<Integer>());
@@ -82,10 +79,13 @@ public class Synchronizer extends Process{
   }
   
   private void broadcastNewLeaders(){
+    TestingMode.print("Broadcasting new leaders");
     for(LeaderToken leader: leaders.values())
       for(int node: leader.component)
         sendNewLeaderMsg(node, leader);
-    while(BooleanCollection.allTrue(ackedNewLeader)){ Wait.aSec(); }
+    TestingMode.print("New leaders have been broadcast");
+    Wait.untilAllTrue(ackedNewLeader);
+    TestingMode.print("New leaders have been acked");
     newNbrs.clear();
   }
   private void sendNewLeaderMsg(int node, LeaderToken leader){
@@ -109,7 +109,7 @@ public class Synchronizer extends Process{
   public void connectToNodes(Set<Node> nodes){
     for(Node node: nodes)
       senders.put(node.uid, new Sender(node.hostname, node.port, uid));
-    while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.threeSeconds();}
+    while(!BoolCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.threeSeconds();}
     sendersUp = true;
   }
   
