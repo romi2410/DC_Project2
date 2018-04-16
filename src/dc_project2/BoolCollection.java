@@ -8,6 +8,11 @@ import java.util.function.Predicate;
 public final class BoolCollection{
   private BoolCollection(){}
   public static boolean allTrue(Collection c, Predicate p){ return c.stream().allMatch(p); }
-  public static boolean allTrue(Collection c){ return !Arrays.asList(c).contains(false); }
-  public static boolean allTrue(HashMap c){ return !Arrays.asList(c.values()).contains(false); }
+  public static boolean allTrue(Collection<Boolean> c){
+    TestingMode.print(c.toString());
+    for(boolean b : c)
+      if(!b) return false;
+    return true;
+  }
+  public static boolean allTrue(HashMap c){ return allTrue(c.values()); }
 }

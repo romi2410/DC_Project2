@@ -1,14 +1,14 @@
 package dc_project2;
 
 import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringJoiner;
 
 class Node extends Process{
   // node stuff
   GHS ghs;
-
+  boolean terminated = false;
+  
   // neighbor stuff
   private HashMap<Integer, Double> weights  = new HashMap<>();
   private HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
@@ -43,9 +43,6 @@ class Node extends Process{
   }
 
   public void sendTo(int rcvrUid, Message newMsg){
-    TestingMode.print(uid + " is sending " + newMsg.toString() + " to " + rcvrUid);
-    try{                            TestingMode.print("\thaving rcvd " + ghs.rcvdFromNbrs()); }
-    catch(NullPointerException e){  TestingMode.print("\thaving rcvd no msgs");               }
     newMsg.sender = uid;
     if(rcvrUid==-1) senderToSynchronizer.send(newMsg);
     else            senders.get(rcvrUid).send(newMsg);
@@ -58,6 +55,16 @@ class Node extends Process{
   }
   
   public synchronized void handleMsg(Message msg){
-    ghs.handleMsg(msg);
+    if(!terminated){
+      TestingMode.print(uid + " rcvd " + msg.getClass());
+      ghs.handleMsg(msg);
+    }
+  }
+  
+  public void terminate(){
+    senders.values().forEach(sender -> sender.terminate());
+    senderToSynchronizer.terminate();
+    Wait.untilAllTrue(senders.values(), Sender.terminated());
+    terminated = true;
   }
 }

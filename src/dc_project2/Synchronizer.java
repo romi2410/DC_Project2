@@ -2,21 +2,21 @@ package dc_project2;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Predicate;
-import java.util.Arrays;
 
 
 public class Synchronizer extends Process{
   
   int uid = -1;
   int level = 0;
+  boolean terminated = false;
   
   // use for synchronizing GHS start
   boolean serverUp = false;
   boolean sendersUp = false;
+  ServerThread server;
   
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
   HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
@@ -35,21 +35,26 @@ public class Synchronizer extends Process{
   }
   
   private void startServer(){
-    ServerThread server = new ServerThread(this, port);
+    server = new ServerThread(this, port);
     server.start();
     while(!server.up){ Wait.threeSeconds(); }
     serverUp = true;
   }
   
-  public synchronized void handleMsg(Message msg){
-    Class msgType = msg.getClass();
-    if(msgType == NewLeaderAckMsg.class)
-      handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
-    else if(msgType == MWOEMsg.class)    
-      handleMWOEMsg((MWOEMsg) msg);
+  public void handleMsg(Message msg){
+    if(!terminated){
+      Class msgType = msg.getClass();
+      if(msgType == NewLeaderAckMsg.class)
+        handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
+      else if(msgType == MWOEMsg.class)    
+        handleMWOEMsg((MWOEMsg) msg);
+    }
   }
-  public void handleNewLeaderAckMsg(NewLeaderAckMsg m){  ackedNewLeader.put(m.sender, true); }
-  public void handleMWOEMsg(MWOEMsg m){
+  public void handleNewLeaderAckMsg(NewLeaderAckMsg m){
+    TestingMode.print("Rcvd newLeaderAck from " + m.sender);
+    ackedNewLeader.put(m.sender, true);
+  }
+  public synchronized void handleMWOEMsg(MWOEMsg m){
     if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-mergedLeaders
     LeaderToken leader = leaders.get(m.sender);
     leader.handleMWOEMsg(m);
@@ -57,11 +62,12 @@ public class Synchronizer extends Process{
     if(BoolCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg()))
       mergePhase(leaders);
   }
-  private void mergePhase(HashMap<Integer, LeaderToken> leaders){
-    leaders = new MergePhase(leaders).getLeaders();
+  private void mergePhase(HashMap<Integer, LeaderToken> leadersToMerge){
+    leaders = new MergePhase(leadersToMerge).getLeaders();
     TestingMode.print("Merge Phase at level " + level + " complete");
     broadcastNewLeaders();
-    TestingMode.print("New leaders have been broadcast");
+    for(LeaderToken leader: leaders.values())
+      TestingMode.print("Leader: " + leader.uid + " with component " + leader.component);
     level++;
     if(leaders.size()==1)
       terminate();
@@ -81,10 +87,14 @@ public class Synchronizer extends Process{
   private void broadcastNewLeaders(){
     TestingMode.print("Broadcasting new leaders");
     for(LeaderToken leader: leaders.values())
-      for(int node: leader.component)
+      for(int node: leader.component){
+        TestingMode.print(node + " should rcv NEwLEaderMsg for leader " + leader.uid);
         sendNewLeaderMsg(node, leader);
+      }
     TestingMode.print("New leaders have been broadcast");
+    ackedNewLeader.entrySet().forEach(e -> TestingMode.print(e.getKey() + " " + e.getValue()));
     Wait.untilAllTrue(ackedNewLeader);
+    ackedNewLeader.entrySet().forEach(e -> TestingMode.print(e.getKey() + " " + e.getValue()));
     TestingMode.print("New leaders have been acked");
     newNbrs.clear();
   }
@@ -104,6 +114,8 @@ public class Synchronizer extends Process{
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
     for(Sender sender: senders.values())
       sender.send(terminateMsg);
+    Wait.untilAllTrue(senders.values(), Sender.terminated());
+    terminated = true;
   }
   
   public void connectToNodes(Set<Node> nodes){

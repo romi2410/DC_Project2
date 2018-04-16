@@ -92,9 +92,11 @@ public class GHS {
   }
 
   private void handleNewLeaderMsg(NewLeaderMsg m){
+    TestingMode.print(node.uid + " GHS rcvd NewLEaderMsg");
     leader = m.newLeader;
     treeNbrs.addAll(m.newNbrs);
     node.sendTo(-1, new NewLeaderAckMsg(node.uid));
+    TestingMode.print(node.uid + " GHS sending NewLeaderAckMsg");
   }
   private void handleNewSearchPhaseMsg(NewSearchPhaseMsg m){
     if(this.isLeader()) newSearchPhase();
@@ -102,8 +104,10 @@ public class GHS {
   }
   
   private void terminate(){
+    System.out.println(node.uid + " begin termination");
     String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining("-"+node.uid+", "));
-    System.out.println(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs);
+    node.terminate();
+    System.out.println(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs + " (size is " + treeNbrs.size());
   }
 
   public String toString(){

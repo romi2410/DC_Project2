@@ -54,7 +54,14 @@ class ClientManager implements Runnable {
       Message msg;
       ObjectInputStream inputStream = new ObjectInputStream(client.getInputStream());
       try{
-        while ((msg = (Message) inputStream.readObject()) != null){ handleMsg(msg); }
+        while ((msg = (Message) inputStream.readObject()) != null){
+          handleMsg(msg);
+          if(owner.getClass() == Synchronizer.class){
+            Wait.aSec();
+            TestingMode.print("Syncrhonizer server connection to " + client + " still alive");
+          }
+        }
+        TestingMode.print(owner.uid + "Received null from " + client.toString());
       }catch(ClassNotFoundException e){
         System.out.println(owner+"'s connection to " + client.toString() + " failed; " + e);
       }
