@@ -43,12 +43,14 @@ public class Synchronizer {
     serverUp = true;
   }
   
-  public void handleMsg(Message msg){
-    Class msgType = msg.getClass();
-    if(msgType == NewLeaderAckMsg.class)
-      handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
-    if(msgType == MWOEMsg.class)    
-      handleMWOEMsg((MWOEMsg) msg);
+  public synchronized void handleMsg(Message msg){
+    synchronized(this){
+      Class msgType = msg.getClass();
+      if(msgType == NewLeaderAckMsg.class)
+        handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
+      else if(msgType == MWOEMsg.class)    
+        handleMWOEMsg((MWOEMsg) msg);
+    }
   }
   public void handleNewLeaderAckMsg(NewLeaderAckMsg m){  ackedNewLeader.put(m.sender, true); }
   public void handleMWOEMsg(MWOEMsg m){
@@ -75,7 +77,7 @@ public class Synchronizer {
     for(LeaderToken leader: leaders.values())
       for(int node: leader.component){
         ackedNewLeader.put(node, false);
-        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, leader.mwoe, newNbrs.getOrDefault(node, new HashSet<Integer>())));
+        senders.get(node).send(new NewLeaderMsg(uid, leader.uid, newNbrs.getOrDefault(node, new HashSet<Integer>())));
       }
     while(!Arrays.asList(ackedNewLeader.values()).contains(false)){}
     for(LeaderToken leader: leaders.values()){
@@ -115,7 +117,7 @@ public class Synchronizer {
 
 
 class LeaderToken{
-  int uid, wantsToMergeWith;
+  int uid, wantsToMergeWith=0;
   HashSet<Integer> component = new HashSet<Integer>();
   MWOEMsg mwoe;
   boolean rcvdMsg = false;
@@ -171,18 +173,39 @@ class MergePhase{
       TestingMode.print(leader.uid+" ");
     TestingMode.print("\n");
     
-    leaders = leadersToMerge;
+    HashMap<Integer, LeaderToken> mergedLeaders = mergeLeaders(leadersToMerge);
+    leaders = absorbLeaders(leadersToMerge, mergedLeaders);
+  }
+  
+  private HashMap<Integer, LeaderToken> mergeLeaders(HashMap<Integer, LeaderToken> leaders){
+    HashMap<Integer, LeaderToken> newLeaders = new HashMap<Integer, LeaderToken>();
     
-    // Iterator is used for safety for deleting elements from leaders while iterating over its elements
     Iterator<LeaderToken> leaderIter = leaders.values().iterator(); 
     while(leaderIter.hasNext()){
       LeaderToken leaderFrom = leaderIter.next();
+      MWOEMsg m = leaderFrom.mwoe;
       LeaderToken leaderTo = leaders.get(leaderFrom.wantsToMergeWith);
-      if(leaderTo.wantsToMergeWith == leaderFrom.uid)
-        merge(leaderFrom, leaderTo, leaderFrom.mwoe);
-      else
-        absorb(leaderFrom, leaderTo);
+      if(leaderTo.wantsToMergeWith == leaderFrom.uid){
+        int newLeaderUID = Math.max(m.externalNode, m.leafnode);
+        LeaderToken newLeader = new LeaderToken(newLeaderUID, leaderFrom, leaderTo);
+        leaderFrom.wantsToMergeWith = newLeaderUID; newLeaders.put(leaderFrom.uid, leaderFrom);
+        leaderTo.wantsToMergeWith = newLeaderUID;   newLeaders.put(leaderTo.uid, leaderTo);
+        for(LeaderToken leader: leaders.values())
+          if(leader.wantsToMergeWith == leaderFrom.uid || leader.wantsToMergeWith == leaderTo.uid){
+            leader.wantsToMergeWith = newLeaderUID;   newLeaders.put(leader.uid, leader);
+          }
+        newLeaders.put(newLeaderUID, newLeader);
+      }
     }
+    return newLeaders;
+  }
+  private HashMap<Integer, LeaderToken> absorbLeaders(HashMap<Integer, LeaderToken> leaders, HashMap<Integer, LeaderToken> mergedLeaders){
+    for(LeaderToken leader: leaders.values()){
+      while(!mergedLeaders.containsKey(leader.wantsToMergeWith))
+        leader.wantsToMergeWith = leaders.get(leader.wantsToMergeWith).wantsToMergeWith;
+      mergedLeaders.get(leader.wantsToMergeWith).component.addAll(leader.component);
+    }
+    return mergedLeaders;
   }
   
   private void merge(LeaderToken leaderA, LeaderToken leaderB, MWOEMsg m){

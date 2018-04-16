@@ -51,19 +51,19 @@ public class GHS {
     node.neighbors().forEach(nbr -> node.sendTo(nbr, msg));
   }
 
-  public void handleMsg(Object msg){
+  public synchronized void handleMsg(Object msg){
     Class msgType = msg.getClass();
     if(msgType == SearchMsg.class)
       handleSearchMsg((SearchMsg) msg);
-    if(msgType == MWOEMsg.class)    
+    else if(msgType == MWOEMsg.class)    
       handleMWOEMsg((MWOEMsg) msg);
-    if(msgType == RejectMsg.class)    
+    else if(msgType == RejectMsg.class)    
       handleRejectMsg((RejectMsg) msg);
-    if(msgType == NewLeaderMsg.class)
+    else if(msgType == NewLeaderMsg.class)
       handleNewLeaderMsg((NewLeaderMsg) msg);
-    if(msgType == NewSearchPhaseMsg.class)
+    else if(msgType == NewSearchPhaseMsg.class)
       handleNewSearchPhaseMsg((NewSearchPhaseMsg) msg);
-    if(msgType == TerminateMsg.class)
+    else if(msgType == TerminateMsg.class)
       terminate();
   }
 
