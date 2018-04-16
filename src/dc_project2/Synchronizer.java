@@ -8,15 +8,13 @@ import java.util.function.Predicate;
 
 
 public class Synchronizer extends Process{
-  
-  int uid = -1;
   int level = 0;
   boolean terminated = false;
   
   // use for synchronizing GHS start
   boolean serverUp = false;
   boolean sendersUp = false;
-  ServerThread server;
+//  ServerThread server;
   
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
   HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
@@ -25,23 +23,27 @@ public class Synchronizer extends Process{
   HashMap<Integer, Boolean> ackedNewLeader = new HashMap<Integer, Boolean>();
   
   public Synchronizer(HashMap<Integer, Node> nodes, String hostname, int port){
+    uid = -1;
     TestingMode.print("new Synchronizer at thread " + Thread.currentThread().getName());
     for(int nodeUID: nodes.keySet())
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
-    startServer();
+    //startServer();
+    (new ServerThread(this, port)).start();
+    serverUp = true;
     if(TestingMode.isOn()) TestingMode.startPrintThread(this);
   }
   
-  private void startServer(){
-    server = new ServerThread(this, port);
-    server.start();
-    while(!server.up){ Wait.threeSeconds(); }
-    serverUp = true;
-  }
+//  private void startServer(){
+//    server = new ServerThread(this, port);
+//    server.start();
+//    while(!server.up){ Wait.threeSeconds(); }
+//    serverUp = true;
+//  }
   
   public void handleMsg(Message msg){
+    TestingMode.print(uid+ " rcvd (Synchronizer) " + msg);
     if(!terminated){
       Class msgType = msg.getClass();
       if(msgType == NewLeaderAckMsg.class)

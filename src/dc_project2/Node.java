@@ -26,8 +26,8 @@ class Node extends Process{
   public Node(int u, String hn, int p) {
     uid = u;  port = p;
     hostname = (TestingMode.isOn()) ? "localhost" : hn;
-    serverUp = true;        
     (new ServerThread(this, port)).start();
+    serverUp = true;        
   }
 
   public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){

@@ -27,6 +27,7 @@ public class ServerThread extends Thread{
       up = true;
       while(true) try {
         Socket s = ss.accept();
+        System.out.println(t.uid + " accepted from " + s);
         Runnable w = new Thread();
         w = new ClientManager(s, t);
         Thread t = new Thread(w);
@@ -54,14 +55,14 @@ class ClientManager implements Runnable {
       Message msg;
       ObjectInputStream inputStream = new ObjectInputStream(client.getInputStream());
       try{
-        while ((msg = (Message) inputStream.readObject()) != null){
+//        while ((msg = (Message) inputStream.readObject()) != null){
+        while (true){
+          msg = (Message) inputStream.readObject();
           handleMsg(msg);
-          if(owner.getClass() == Synchronizer.class){
-            Wait.aSec();
-            TestingMode.print("Syncrhonizer server connection to " + client + " still alive");
-          }
+          System.out.println(owner.uid + " server connection to " + client + " still alive");
+          //Wait.threeSeconds();
         }
-        TestingMode.print(owner.uid + "Received null from " + client.toString());
+//        TestingMode.print(owner.uid + "Received null from " + client.toString());
       }catch(ClassNotFoundException e){
         System.out.println(owner+"'s connection to " + client.toString() + " failed; " + e);
       }
@@ -69,7 +70,9 @@ class ClientManager implements Runnable {
   }
 
   public void handleMsg(Message m){
-    TestingMode.print(String.valueOf(owner)+ " rcvd " + m);
+    if(owner.getClass() == Synchronizer.class)
+      System.out.print(owner.uid + " rcvd (ServerThread) " + m);
+      //TestingMode.print(owner.uid + " rcvd (ServerThread) " + m);
     owner.handleMsg(m);
   }
 }

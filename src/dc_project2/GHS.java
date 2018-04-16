@@ -12,8 +12,7 @@ public class GHS {
   // rcvd msgs
   private HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
   public boolean rcvdFromAllNbrs(){
-    rcvdFromNbr.entrySet().forEach(e -> System.out.print(e.getKey()+":"+e.getValue()));
-    System.out.println();
+    //rcvdFromNbr.entrySet().forEach(e -> System.out.print(e.getKey()+":"+e.getValue()));
     return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
   }
   public String rcvdFromNbrs(){
