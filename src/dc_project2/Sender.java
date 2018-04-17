@@ -46,6 +46,7 @@ public class Sender{
   }
   private void send(){
     if(msg != null){
+      Wait.random();
       TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvr.owner.uid, ownerUID);
       rcvr.handleMsg(msg);
       if(msg.is(TerminateMsg.class))  terminate();
