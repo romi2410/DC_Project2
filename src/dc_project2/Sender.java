@@ -51,10 +51,12 @@ public class Sender{
     TestingMode.print(ownerUID + " sent " + newMsg.toString() + " to " + rcvrPort, ownerUID);
   }
   private void send(){
-    if(msg != null) 
+    if(msg != null){
+      TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvrPort, ownerUID);
       try{  outputStream.writeObject(msg);
             if(msg.is(TerminateMsg.class))  terminate();
       }catch(IOException e) { e.printStackTrace(); }
+    }
   }
   
 }

@@ -13,7 +13,7 @@ public class Synchronizer extends Process{
   // use for synchronizing GHS start
   boolean serverUp = false;
   boolean sendersUp = false;
-//  ServerThread server;
+  ServerThread server;
   
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
   HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
@@ -28,8 +28,8 @@ public class Synchronizer extends Process{
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
-    Synchronizer t = this;
-    (new ServerThread(t, port)).start();
+    server = new ServerThread(this, port);
+    server.start();
     serverUp = true;
   }
   

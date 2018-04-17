@@ -10,7 +10,7 @@ public class GHS {
   
   // rcvd msgs
   private HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
-  public boolean rcvdCCFromAllNbrs(){
+  public boolean rcvdFromAllNbrs(){
     Printer.print(node.uid + " has rcvd this rnd: " + rcvdFromNbrs());
     //rcvdFromNbr.entrySet().forEach(e -> System.out.print(e.getKey()+":"+e.getValue()));
     //return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
@@ -64,7 +64,6 @@ public class GHS {
   }
 
   private void handleSearchMsg(SearchMsg m){
-    TestingMode.print(node.uid + "'s leader is " + leader);
     if(treeNbrs.contains(m.sender)){
       parent = m.sender;
       newSearchPhase();
@@ -78,18 +77,14 @@ public class GHS {
   private void handleMWOEMsg(MWOEMsg newMwoeMsg){
     rcvdFromNbr.put(newMwoeMsg.sender, newMwoeMsg);
     mwoeMsg = (mwoeMsg != null) ? MWOEMsg.min(mwoeMsg, newMwoeMsg) : newMwoeMsg;
-    if(rcvdCCFromAllNbrs()){
-      TestingMode.print(node.uid + " wants to send MWOEMsg " + mwoeMsg + " to its parent " + parent, node.uid);
+    if(rcvdFromAllNbrs())
       node.sendTo(parent, mwoeMsg);
-    }
   }
 
   private void handleRejectMsg(RejectMsg m){
     rcvdFromNbr.put(m.sender, m);
-    if(rcvdCCFromAllNbrs()){
-      TestingMode.print(node.uid + " wants to send MWOEMsg " + mwoeMsg + " to its parent " + parent, node.uid);
+    if(rcvdFromAllNbrs())
       node.sendTo(parent, mwoeMsg);
-    }
   }
 
   private void handleNewLeaderMsg(NewLeaderMsg m){

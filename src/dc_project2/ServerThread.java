@@ -2,6 +2,7 @@ package dc_project2;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.OptionalDataException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.net.Socket;
@@ -53,13 +54,12 @@ class ClientManager implements Runnable {
       ObjectInputStream inputStream = new ObjectInputStream(client.getInputStream());
       try{
         while (true){
-          msg = (Message) inputStream.readObject();
-          if(msg != null)
+          while((msg = (Message) inputStream.readObject()) != null)
             handleMsg(msg);
         }
       }catch(ClassNotFoundException e){
         System.out.println(owner+"'s connection to " + client.toString() + " failed; " + e);
-      }
+      } catch(OptionalDataException e) {  e.printStackTrace();  TestingMode.print(owner.uid + " " + e.length + " " + e.eof + " " );}
     } catch(IOException e) {  e.printStackTrace();  }
   }
 
