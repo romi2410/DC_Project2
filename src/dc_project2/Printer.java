@@ -1,6 +1,6 @@
 package dc_project2;
 
-// stores the last output printed, so that duplicate outputs are not printed
+// synchronous printing + prevent duplicate print statements for a uid
 
 import java.util.HashMap;
 

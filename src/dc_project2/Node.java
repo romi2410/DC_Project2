@@ -25,7 +25,8 @@ class Node extends Process{
   public Node(int u, String hn, int p) {
     uid = u;  port = p;
     hostname = (TestingMode.isOn()) ? "localhost" : hn;
-    (new ServerThread(this, port)).start();
+    Node t = this;
+    (new ServerThread(t, port)).start();
     serverUp = true;
     ghs = new GHS(this);
   }
@@ -40,8 +41,6 @@ class Node extends Process{
   public void initGHS(){  ghs.newSearchPhase(); }
 
   public void sendTo(int rcvrUid, Message newMsg){
-    Printer.print(uid + " wants to send a msg");
-    Printer.print(uid + " " + newMsg.toString());
     newMsg.sender = uid;
     if(rcvrUid==-1) senderToSynchronizer.loadNewMsg(newMsg);
     else            senders.get(rcvrUid).loadNewMsg(newMsg);

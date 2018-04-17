@@ -12,11 +12,7 @@ public class ServerThread extends Thread{
   boolean up = false;
   HashSet<Thread> connections = new HashSet<Thread>();
   
-  ServerThread(Node t, int port){
-    this.t = t;
-    this.port = port;
-  }
-  ServerThread(Synchronizer t, int port){
+  ServerThread(Process t, int port){
     this.t = t;
     this.port = port;
   }
@@ -56,14 +52,11 @@ class ClientManager implements Runnable {
       Message msg;
       ObjectInputStream inputStream = new ObjectInputStream(client.getInputStream());
       try{
-//        while ((msg = (Message) inputStream.readObject()) != null){
         while (true){
           msg = (Message) inputStream.readObject();
-          handleMsg(msg);
-          //Printer.print(owner.uid + " server connection to " + client + " still alive", owner.uid);
-          //Wait.threeSeconds();
+          if(msg != null)
+            handleMsg(msg);
         }
-//        TestingMode.print(owner.uid + "Received null from " + client.toString());
       }catch(ClassNotFoundException e){
         System.out.println(owner+"'s connection to " + client.toString() + " failed; " + e);
       }

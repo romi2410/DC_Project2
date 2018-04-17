@@ -28,7 +28,8 @@ public class Synchronizer extends Process{
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
-    (new ServerThread(this, port)).start();
+    Synchronizer t = this;
+    (new ServerThread(t, port)).start();
     serverUp = true;
   }
   
