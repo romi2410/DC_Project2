@@ -45,10 +45,10 @@ public class Sender{
   }
   
   public void loadNewMsg(Message newMsg){
-    TestingMode.print(ownerUID + " is sending " + newMsg.toString());
     newMsg.sender = ownerUID;
     msg = newMsg;
     send();
+    TestingMode.print(ownerUID + " sent " + newMsg.toString() + " to " + rcvrPort, ownerUID);
   }
   private void send(){
     if(msg != null) 

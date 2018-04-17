@@ -26,7 +26,8 @@ class Node extends Process{
     uid = u;  port = p;
     hostname = (TestingMode.isOn()) ? "localhost" : hn;
     (new ServerThread(this, port)).start();
-    serverUp = true;        
+    serverUp = true;
+    ghs = new GHS(this);
   }
 
   public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
@@ -36,12 +37,11 @@ class Node extends Process{
   public void connectToSynchronizer(String syncHostname, int syncPort){
     senderToSynchronizer = new Sender(syncHostname, syncPort, uid);
   }
-  public void initGHS(){
-    System.out.println(this.toString());
-    ghs = new GHS(this);
-  }
+  public void initGHS(){  ghs.newSearchPhase(); }
 
   public void sendTo(int rcvrUid, Message newMsg){
+    Printer.print(uid + " wants to send a msg");
+    Printer.print(uid + " " + newMsg.toString());
     newMsg.sender = uid;
     if(rcvrUid==-1) senderToSynchronizer.loadNewMsg(newMsg);
     else            senders.get(rcvrUid).loadNewMsg(newMsg);
@@ -53,7 +53,9 @@ class Node extends Process{
             .toString();
   }
   
-  public synchronized void handleMsg(Message msg){  ghs.handleMsg(msg);   }
+  public synchronized void handleMsg(Message msg){
+    if(ghs!=null) ghs.handleMsg(msg);   //the only time ghs is null is at the start
+  }
   
   public void terminate(){
     senders.values().forEach(sender -> sender.terminate());

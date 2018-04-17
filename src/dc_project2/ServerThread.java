@@ -3,12 +3,14 @@ package dc_project2;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.net.ServerSocket;
+import java.util.HashSet;
 import java.net.Socket;
 
 public class ServerThread extends Thread{
   Process t;
   int port;
   boolean up = false;
+  HashSet<Thread> connections = new HashSet<Thread>();
   
   ServerThread(Node t, int port){
     this.t = t;
@@ -26,9 +28,11 @@ public class ServerThread extends Thread{
       up = true;
       while(true) try {
         Socket s = ss.accept();
+        Printer.print(port + " received connection from " + s);
         Runnable w = new ClientManager(s, t);
         Thread t = new Thread(w);
         t.start();
+        connections.add(t);
       } catch(IOException e) {
         System.out.println("accept failed");
         System.exit(100);
@@ -56,7 +60,7 @@ class ClientManager implements Runnable {
         while (true){
           msg = (Message) inputStream.readObject();
           handleMsg(msg);
-          Printer.print(owner.uid + " server connection to " + client + " still alive");
+          //Printer.print(owner.uid + " server connection to " + client + " still alive", owner.uid);
           //Wait.threeSeconds();
         }
 //        TestingMode.print(owner.uid + "Received null from " + client.toString());
@@ -68,7 +72,7 @@ class ClientManager implements Runnable {
 
   public void handleMsg(Message m){
     if(!owner.terminated){
-      Printer.print(owner.uid + " rcvd " + m);
+      TestingMode.print(owner.uid + " rcvd " + m, owner.uid);
       owner.handleMsg(m);
     }
   }

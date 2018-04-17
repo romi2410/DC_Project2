@@ -10,9 +10,11 @@ public class GHS {
   
   // rcvd msgs
   private HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
-  public boolean rcvdFromAllNbrs(){
+  public boolean rcvdCCFromAllNbrs(){
+    Printer.print(node.uid + " has rcvd this rnd: " + rcvdFromNbrs());
     //rcvdFromNbr.entrySet().forEach(e -> System.out.print(e.getKey()+":"+e.getValue()));
-    return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
+    //return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
+    return BoolCollection.allTrue(rcvdFromNbr.values(), Message.isConvergeCast());
   }
   public String rcvdFromNbrs(){
     try{
@@ -34,11 +36,9 @@ public class GHS {
   public GHS(Node node){
     leader = node.uid;
     this.node = node;
-    newSearchPhase();
   }
 
-  private void newSearchPhase(){
-    TestingMode.print(String.valueOf(node.uid) + " is starting a new search phase!");
+  public void newSearchPhase(){
     mwoeMsg = null;
     for(int uid: node.neighbors())
       rcvdFromNbr.put(uid, NullMsg.getInstance());
@@ -64,6 +64,7 @@ public class GHS {
   }
 
   private void handleSearchMsg(SearchMsg m){
+    TestingMode.print(node.uid + "'s leader is " + leader);
     if(treeNbrs.contains(m.sender)){
       parent = m.sender;
       newSearchPhase();
@@ -77,14 +78,18 @@ public class GHS {
   private void handleMWOEMsg(MWOEMsg newMwoeMsg){
     rcvdFromNbr.put(newMwoeMsg.sender, newMwoeMsg);
     mwoeMsg = (mwoeMsg != null) ? MWOEMsg.min(mwoeMsg, newMwoeMsg) : newMwoeMsg;
-    if(rcvdFromAllNbrs())
+    if(rcvdCCFromAllNbrs()){
+      TestingMode.print(node.uid + " wants to send MWOEMsg " + mwoeMsg + " to its parent " + parent, node.uid);
       node.sendTo(parent, mwoeMsg);
+    }
   }
 
   private void handleRejectMsg(RejectMsg m){
     rcvdFromNbr.put(m.sender, m);
-    if(rcvdFromAllNbrs())
+    if(rcvdCCFromAllNbrs()){
+      TestingMode.print(node.uid + " wants to send MWOEMsg " + mwoeMsg + " to its parent " + parent, node.uid);
       node.sendTo(parent, mwoeMsg);
+    }
   }
 
   private void handleNewLeaderMsg(NewLeaderMsg m){

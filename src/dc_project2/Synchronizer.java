@@ -28,29 +28,17 @@ public class Synchronizer extends Process{
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
-    //startServer();
     (new ServerThread(this, port)).start();
     serverUp = true;
   }
   
-//  private void startServer(){
-//    server = new ServerThread(this, port);
-//    server.start();
-//    while(!server.up){ Wait.threeSeconds(); }
-//    serverUp = true;
-//  }
-  
   public void handleMsg(Message msg){
-    TestingMode.print(uid+ " rcvd (Synchronizer) " + msg);
     if(msg.is(NewLeaderAckMsg.class))
       handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
     else if(msg.is(MWOEMsg.class))
       handleMWOEMsg((MWOEMsg) msg);
   }
-  public void handleNewLeaderAckMsg(NewLeaderAckMsg m){
-    TestingMode.print("Rcvd newLeaderAck from " + m.sender);
-    ackedNewLeader.put(m.sender, true);
-  }
+  public void handleNewLeaderAckMsg(NewLeaderAckMsg m){ ackedNewLeader.put(m.sender, true); }
   public synchronized void handleMWOEMsg(MWOEMsg m){
     if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-mergedLeaders
     LeaderToken leader = leaders.get(m.sender);
@@ -61,18 +49,13 @@ public class Synchronizer extends Process{
   }
   private void mergePhase(HashMap<Integer, LeaderToken> leadersToMerge){
     leaders = new MergePhase(leadersToMerge).getLeaders();
-    TestingMode.print("Merge Phase at level " + level + " complete");
     broadcastNewLeaders();
-    for(LeaderToken leader: leaders.values())
-      TestingMode.print("Leader: " + leader.uid + " with component " + leader.component);
     level++;
     if(leaders.size()==1)
       terminate();
-    else{
-      TestingMode.print("Number of Leaders: " + leaders.size());
+    else
       for(LeaderToken leader: leaders.values())
         sendNewSearchPhaseMsg(leader);
-    }
   }
   private void addNewNbrs(int nodeA, int nodeB){  addNewEdge(nodeA, nodeB); addNewEdge(nodeB, nodeA); }
   private void addNewEdge(int nodeFrom, int nodeTo){
@@ -82,17 +65,12 @@ public class Synchronizer extends Process{
   }
   
   private void broadcastNewLeaders(){
-    TestingMode.print("Broadcasting new leaders");
     for(LeaderToken leader: leaders.values())
-      for(int node: leader.component){
-        TestingMode.print(node + " should rcv NEwLEaderMsg for leader " + leader.uid);
+      for(int node: leader.component)
         sendNewLeaderMsg(node, leader);
-      }
-    TestingMode.print("New leaders have been broadcast");
     ackedNewLeader.entrySet().forEach(e -> TestingMode.print(e.getKey() + " " + e.getValue()));
     Wait.untilAllTrue(ackedNewLeader);
     ackedNewLeader.entrySet().forEach(e -> TestingMode.print(e.getKey() + " " + e.getValue()));
-    TestingMode.print("New leaders have been acked");
     newNbrs.clear();
   }
   private void sendNewLeaderMsg(int node, LeaderToken leader){
