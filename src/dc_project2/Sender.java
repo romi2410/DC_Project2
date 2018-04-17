@@ -26,16 +26,16 @@ public class Sender{
   
   Sender(ClientManager rcvr, int senderUID){
     this.ownerUID = senderUID;  this.rcvr = rcvr;
-    while(!successfullyConnected)
-      (new Thread() {
-        @Override
-        public void run() {
-          while(!terminated){
-            send();
-            Wait.threeSeconds();
-          }
-        }
-      }).start();
+//    while(!successfullyConnected)
+//      (new Thread() {
+//        @Override
+//        public void run() {
+//          while(!terminated){
+//            send();
+//            Wait.threeSeconds();
+//          }
+//        }
+//      }).start();
       successfullyConnected = true;
   }
   
