@@ -43,10 +43,13 @@ public class Synchronizer extends Process{
   }
   public void handleNewLeaderAckMsg(NewLeaderAckMsg m){ ackedNewLeader.put(m.sender, true); }
   public synchronized void handleMWOEMsg(MWOEMsg m){
+    Printer.print("Synchronizer rcvd " + m.toString());
     if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-mergedLeaders
+    Printer.print("That msg is from a valid leader");
     LeaderToken leader = leaders.get(m.sender);
     leader.handleMWOEMsg(m);
     addNewNbrs(m.externalNode, m.leafnode);
+    Printer.print(leaders.values().toString());
     if(BoolCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg()))
       mergePhase(leaders);
   }
@@ -83,8 +86,8 @@ public class Synchronizer extends Process{
     senders.get(node).loadNewMsg(newLeaderMsg);
   }
   private void sendNewSearchPhaseMsg(LeaderToken leader){
-    senders.get(leader.uid).loadNewMsg(new NewSearchPhaseMsg(-1));
     leader.resetRcvdMsg();
+    senders.get(leader.uid).loadNewMsg(new NewSearchPhaseMsg(-1));
   }
   
   private void terminate(){
@@ -123,7 +126,7 @@ class LeaderToken{
   int uid, wantsToMergeWith=0;
   HashSet<Integer> component = new HashSet<Integer>();
   MWOEMsg mwoe;
-  boolean rcvdMsg = false;
+  private boolean rcvdMsg = false;
   public static Predicate<LeaderToken> rcvdMsg(){ return leader->leader.rcvdMsg; }
   
   public LeaderToken(int uid){  this.uid = uid;   component.add(uid); }
@@ -136,7 +139,7 @@ class LeaderToken{
     mwoe = m;
     rcvdMsg = true;
   }
-  public void    resetRcvdMsg()                      { rcvdMsg = false;                     }
+  public void    resetRcvdMsg()                      { rcvdMsg = false; Printer.print(uid + " had its rcvdMsg reset in Synchronizer");}
   public boolean wantsToMergeWith(LeaderToken leader){ return wantsToMergeWith==leader.uid; }
   public void    absorb(LeaderToken food)            { component.addAll(food.component);    }
   @Override
@@ -147,10 +150,8 @@ class LeaderToken{
       sj.add(String.valueOf(node));
     sj.add(">\t");
     
-    if(rcvdMsg){
+    if(rcvdMsg)
       sj.add(" and wants to merge with").add(String.valueOf(wantsToMergeWith));
-      sj.add("\t\tits MWOEMsg is\t").add(mwoe.toString());
-    }
     else
       sj.add(" and has not send a MWOEMsg yet this level");
     return sj.toString();
