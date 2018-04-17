@@ -9,7 +9,6 @@ import java.util.function.Predicate;
 
 public class Synchronizer extends Process{
   int level = 0;
-  boolean terminated = false;
   
   // use for synchronizing GHS start
   boolean serverUp = false;
@@ -32,7 +31,6 @@ public class Synchronizer extends Process{
     //startServer();
     (new ServerThread(this, port)).start();
     serverUp = true;
-    if(TestingMode.isOn()) TestingMode.startPrintThread(this);
   }
   
 //  private void startServer(){
@@ -44,13 +42,10 @@ public class Synchronizer extends Process{
   
   public void handleMsg(Message msg){
     TestingMode.print(uid+ " rcvd (Synchronizer) " + msg);
-    if(!terminated){
-      Class msgType = msg.getClass();
-      if(msgType == NewLeaderAckMsg.class)
-        handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
-      else if(msgType == MWOEMsg.class)    
-        handleMWOEMsg((MWOEMsg) msg);
-    }
+    if(msg.is(NewLeaderAckMsg.class))
+      handleNewLeaderAckMsg((NewLeaderAckMsg) msg);
+    else if(msg.is(MWOEMsg.class))
+      handleMWOEMsg((MWOEMsg) msg);
   }
   public void handleNewLeaderAckMsg(NewLeaderAckMsg m){
     TestingMode.print("Rcvd newLeaderAck from " + m.sender);
@@ -104,10 +99,10 @@ public class Synchronizer extends Process{
     ackedNewLeader.put(node, false);
     HashSet<Integer> addedNbrs = newNbrs.getOrDefault(node, new HashSet<Integer>());
     NewLeaderMsg newLeaderMsg = new NewLeaderMsg(uid, leader.uid, addedNbrs);
-    senders.get(node).send(newLeaderMsg);
+    senders.get(node).loadNewMsg(newLeaderMsg);
   }
   private void sendNewSearchPhaseMsg(LeaderToken leader){
-    senders.get(leader).send(new NewSearchPhaseMsg(-1));
+    senders.get(leader).loadNewMsg(new NewSearchPhaseMsg(-1));
     leader.resetRcvdMsg();
   }
   
@@ -115,7 +110,7 @@ public class Synchronizer extends Process{
     TestingMode.print("TERMINATING");
     TerminateMsg terminateMsg = new TerminateMsg(level, this.uid);
     for(Sender sender: senders.values())
-      sender.send(terminateMsg);
+      sender.loadNewMsg(terminateMsg);
     Wait.untilAllTrue(senders.values(), Sender.terminated());
     terminated = true;
   }
@@ -127,7 +122,8 @@ public class Synchronizer extends Process{
     sendersUp = true;
   }
   
-  public String toString(){
+  //print level, and each node's component
+  public String status(){
     StringJoiner sj = new StringJoiner("\n");
     sj.add("Level: " + level);
     for(LeaderToken leader: leaders.values())

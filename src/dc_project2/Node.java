@@ -7,7 +7,6 @@ import java.util.StringJoiner;
 class Node extends Process{
   // node stuff
   GHS ghs;
-  boolean terminated = false;
   
   // neighbor stuff
   private HashMap<Integer, Double> weights  = new HashMap<>();
@@ -44,22 +43,17 @@ class Node extends Process{
 
   public void sendTo(int rcvrUid, Message newMsg){
     newMsg.sender = uid;
-    if(rcvrUid==-1) senderToSynchronizer.send(newMsg);
-    else            senders.get(rcvrUid).send(newMsg);
+    if(rcvrUid==-1) senderToSynchronizer.loadNewMsg(newMsg);
+    else            senders.get(rcvrUid).loadNewMsg(newMsg);
   }
 
   public String toString(){
-    StringJoiner sb = new StringJoiner(" ");
-    sb.add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port));
-    return sb.toString();
+    return (new StringJoiner(" ")
+            .add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port)))
+            .toString();
   }
   
-  public synchronized void handleMsg(Message msg){
-    if(!terminated){
-      TestingMode.print(uid + " rcvd " + msg.getClass());
-      ghs.handleMsg(msg);
-    }
-  }
+  public synchronized void handleMsg(Message msg){  ghs.handleMsg(msg);   }
   
   public void terminate(){
     senders.values().forEach(sender -> sender.terminate());

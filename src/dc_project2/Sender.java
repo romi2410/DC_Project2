@@ -12,6 +12,7 @@ public class Sender{
   Message msg;
   int ownerUID, rcvrPort;
   String rcvrHostname;
+  ObjectOutputStream outputStream;
 
   boolean successfullyConnected = false;
   public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
@@ -27,18 +28,12 @@ public class Sender{
     this.ownerUID = senderUID;  this.rcvrPort = rcvrPort; this.rcvrHostname = rcvrHostname;
     while(!successfullyConnected) try {
       Socket s = new Socket(rcvrHostname, rcvrPort);
-      ObjectOutputStream outputStream = new ObjectOutputStream(s.getOutputStream());
+      outputStream = new ObjectOutputStream(s.getOutputStream());
       (new Thread() {
         @Override
         public void run() {
           while(!terminated){
-            TestingMode.print(ownerUID + " not yet terminated");
-            try{  if(msg != null) {
-    if(msg.getClass() == NewLeaderAckMsg.class) TestingMode.print(ownerUID + " is sending NewLeaderAckMsg");
-                    outputStream.writeObject(msg);
-                    if(msg.getClass() == TerminateMsg.class)  terminate();
-                  }
-            }catch(IOException e) { e.printStackTrace();            }
+            send();
             Wait.threeSeconds();
           }
         }
@@ -49,10 +44,17 @@ public class Sender{
     }
   }
   
-  public void send(Message newMsg){
-    if(newMsg.getClass() == NewLeaderMsg.class) TestingMode.print(ownerUID + " is sending NewLeaderMsg");
+  public void loadNewMsg(Message newMsg){
+    TestingMode.print(ownerUID + " is sending " + newMsg.toString());
     newMsg.sender = ownerUID;
     msg = newMsg;
+    send();
+  }
+  private void send(){
+    if(msg != null) 
+      try{  outputStream.writeObject(msg);
+            if(msg.is(TerminateMsg.class))  terminate();
+      }catch(IOException e) { e.printStackTrace(); }
   }
   
 }

@@ -25,4 +25,7 @@ abstract class Message implements java.io.Serializable{
     }catch(IllegalAccessException e){System.out.println(e);}
     return sj.toString();
   }
+  public boolean is(Class c){
+    return this.getClass() == c;
+  }
 }

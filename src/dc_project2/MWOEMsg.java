@@ -41,11 +41,8 @@ public class MWOEMsg extends Message{
           return a;
         else if(a_SmallLeader < b_SmallLeader)
           return b;
-        else{
-//          TestingMode.print("Unexpected Scenario: comparing two equal MWOEMsgs," 
-//                  + a.toString() + " and " + b.toString());
+        else // equal messages - doesn't matter which one to return
           return a;
-        }
       }
     }
   }

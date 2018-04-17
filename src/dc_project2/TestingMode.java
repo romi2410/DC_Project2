@@ -12,18 +12,6 @@ public class TestingMode {
                                             print("Running in test (host will be localhost)");  }
   public static boolean   isOn()          { return      test;                                   }
   
-  public static void      print(String s) { //if(isOn())  System.out.println(s);                  }
-                                            }
+  public static void      print(String s) { Printer.print(s);                                   }
   public static int       threadCount()   { return      Thread.activeCount();                   }
-  public static void      startPrintThread(Object t){
-    (new Thread() {
-      @Override
-      public void run() {
-        while(true){
-          Wait.thirtySeconds();
-          TestingMode.print(t.toString());
-        }
-      }
-    }).start();
-  }
 }

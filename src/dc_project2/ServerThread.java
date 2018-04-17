@@ -23,13 +23,10 @@ public class ServerThread extends Thread{
   public void run(){
     try{
       ServerSocket ss = new ServerSocket(port);
-      TestingMode.print("Opening up new ServerSocket at port " + port);
       up = true;
       while(true) try {
         Socket s = ss.accept();
-        System.out.println(t.uid + " accepted from " + s);
-        Runnable w = new Thread();
-        w = new ClientManager(s, t);
+        Runnable w = new ClientManager(s, t);
         Thread t = new Thread(w);
         t.start();
       } catch(IOException e) {
@@ -59,7 +56,7 @@ class ClientManager implements Runnable {
         while (true){
           msg = (Message) inputStream.readObject();
           handleMsg(msg);
-          System.out.println(owner.uid + " server connection to " + client + " still alive");
+          Printer.print(owner.uid + " server connection to " + client + " still alive");
           //Wait.threeSeconds();
         }
 //        TestingMode.print(owner.uid + "Received null from " + client.toString());
@@ -70,9 +67,9 @@ class ClientManager implements Runnable {
   }
 
   public void handleMsg(Message m){
-    if(owner.getClass() == Synchronizer.class)
-      System.out.print(owner.uid + " rcvd (ServerThread) " + m);
-      //TestingMode.print(owner.uid + " rcvd (ServerThread) " + m);
-    owner.handleMsg(m);
+    if(!owner.terminated){
+      Printer.print(owner.uid + " rcvd " + m);
+      owner.handleMsg(m);
+    }
   }
 }
