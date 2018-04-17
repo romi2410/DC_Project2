@@ -63,7 +63,8 @@ public class Synchronizer extends Process{
       for(LeaderToken leader: leaders.values())
         sendNewSearchPhaseMsg(leader);
   }
-  private void addNewNbrs(int nodeA, int nodeB){  addNewEdge(nodeA, nodeB); addNewEdge(nodeB, nodeA); }
+  private void addNewNbrs(int nodeA, int nodeB){  addNewEdge(nodeA, nodeB); addNewEdge(nodeB, nodeA); 
+    Printer.print(nodeA + " and " + nodeB + " are now nbrs"); }
   private void addNewEdge(int nodeFrom, int nodeTo){
     if(!newNbrs.containsKey(nodeFrom))
       newNbrs.put(nodeFrom, new HashSet<Integer>());

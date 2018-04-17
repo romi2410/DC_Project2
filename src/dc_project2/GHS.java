@@ -110,9 +110,9 @@ public class GHS {
   
   private void terminate(){
     Printer.print(node.uid + " begin termination");
-    String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining("-"+node.uid+", "));
+    String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining(", "));
     node.terminate();
-    Printer.print(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs + " (size is " + treeNbrs.size());
+    Printer.print(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs);
   }
 
   public String toString(){
