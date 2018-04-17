@@ -3,6 +3,7 @@ package dc_project2;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.function.Predicate;
+import java.util.Random;
 
 public final class Wait{
   private Wait(){}
@@ -10,6 +11,7 @@ public final class Wait{
   public  static void threeSeconds()    { wait(3);  }
   public  static void tenSeconds()      { wait(10); }
   public  static void thirtySeconds()   { wait(30); }
+  public  static void random()          { wait((new Random()).nextInt(2)); }
   private static void wait(int seconds) {
     try                           { Thread.sleep(seconds*1000); } 
     catch(InterruptedException e) { System.out.println(e);      }
