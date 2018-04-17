@@ -83,7 +83,7 @@ public class Synchronizer extends Process{
     senders.get(node).loadNewMsg(newLeaderMsg);
   }
   private void sendNewSearchPhaseMsg(LeaderToken leader){
-    senders.get(leader).loadNewMsg(new NewSearchPhaseMsg(-1));
+    senders.get(leader.uid).loadNewMsg(new NewSearchPhaseMsg(-1));
     leader.resetRcvdMsg();
   }
   
@@ -182,6 +182,8 @@ class MergePhase{
       LeaderToken leaderB = leadersToMerge.get(leaderA.wantsToMergeWith);
       if(leaderB.wantsToMergeWith(leaderA))
         merge(leaderA, leaderB, leadersToMerge);
+      else
+        Printer.print(leaderA.uid + " wants to merge with " + leaderB.uid + ", but " + leaderB.uid + " wants to merge with " + leaderB.wantsToMergeWith);
     }
   }
   private void merge(LeaderToken leaderA, LeaderToken leaderB,

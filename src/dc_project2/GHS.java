@@ -13,8 +13,11 @@ public class GHS {
   public boolean rcvdFromAllNbrs(){
     Printer.print(node.uid + " has rcvd this rnd: " + rcvdFromNbrs());
     //rcvdFromNbr.entrySet().forEach(e -> System.out.print(e.getKey()+":"+e.getValue()));
-    //return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
-    return BoolCollection.allTrue(rcvdFromNbr.values(), Message.isConvergeCast());
+    for(Message rcvdMsg: rcvdFromNbr.values())
+      if(rcvdMsg.is(NullMsg.class))
+        return false;
+    return true;
+//    return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
   }
   public String rcvdFromNbrs(){
     try{
@@ -41,11 +44,20 @@ public class GHS {
   public void newSearchPhase(){
     mwoeMsg = null;
     for(int uid: node.neighbors())
-      rcvdFromNbr.put(uid, NullMsg.getInstance());
+      rcvdFromNbr.put(uid, new NullMsg(uid));
+    broadcast(new SearchMsg(leader, node.uid));
+  }
+  public void newSearchPhase(SearchMsg m){
+    mwoeMsg = null;
+    for(int uid: node.neighbors())
+      rcvdFromNbr.put(uid, new NullMsg(uid));
+    rcvdFromNbr.put(parent, m);
     broadcast(new SearchMsg(leader, node.uid));
   }
   private void broadcast(Message msg){
-    node.neighbors().forEach(nbr -> node.sendTo(nbr, msg));
+    for(Integer nbr: node.neighbors())
+      if(nbr != parent)
+        node.sendTo(nbr, msg);
   }
 
   public synchronized void handleMsg(Message msg){
@@ -66,8 +78,7 @@ public class GHS {
   private void handleSearchMsg(SearchMsg m){
     if(treeNbrs.contains(m.sender)){
       parent = m.sender;
-      newSearchPhase();
-      rcvdFromNbr.put(parent, m);
+      newSearchPhase(m);
     }else if(m.leader == leader)
       node.sendTo(m.sender, new RejectMsg(node.uid));
     else

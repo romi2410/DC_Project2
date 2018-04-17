@@ -26,6 +26,6 @@ abstract class Message implements java.io.Serializable{
     }catch(IllegalAccessException e){System.out.println(e);}
     return sj.toString();
   }
-  public static Predicate<Message> isConvergeCast(){ return m -> m.is(MWOEMsg.class) || m.is(RejectMsg.class);  }
+  //public static Predicate<Message> isConvergeCast(){ return m -> m.is(MWOEMsg.class) || m.is(RejectMsg.class);  }
   public boolean is(Class c){ return this.getClass() == c;  }
 }

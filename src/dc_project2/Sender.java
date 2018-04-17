@@ -43,7 +43,6 @@ public class Sender{
     newMsg.sender = ownerUID;
     msg = newMsg;
     send();
-    TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvr.owner.uid, ownerUID);
   }
   private void send(){
     if(msg != null){
