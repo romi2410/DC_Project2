@@ -7,7 +7,6 @@ public class MWOEMsg extends Message{
   int leafnode;
   int externalNode;
   double weight;
-  Path path;
 
   public MWOEMsg(int compLeader, int externalLeader, int leafnode, int extnode, double weight, int sender){
     super(sender);
@@ -16,9 +15,13 @@ public class MWOEMsg extends Message{
     this.leafnode = leafnode;
     this.externalNode = extnode;
     this.weight = weight;
-    this.path = new Path(extnode);
   }
 
+  public static int newLeaderUID(MWOEMsg m1, MWOEMsg m2){
+    assert Math.max(m1.externalNode, m1.leafnode) == Math.max(m2.externalNode, m2.leafnode);
+    return Math.max(m1.externalNode, m1.leafnode);
+  }
+          
   public static MWOEMsg min(MWOEMsg a, MWOEMsg b){
     if(a.weight > b.weight)
       return b;
@@ -38,11 +41,8 @@ public class MWOEMsg extends Message{
           return a;
         else if(a_SmallLeader < b_SmallLeader)
           return b;
-        else{
-          TestingMode.print("Unexpected Scenario: comparing two equal MWOEMsgs,\n" 
-                  + a.toString() + "\n and\n" + b.toString());
+        else // equal messages - doesn't matter which one to return
           return a;
-        }
       }
     }
   }

@@ -1,17 +1,13 @@
 package dc_project2;
 
 import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringJoiner;
 
-class Node{
+class Node extends Process{
   // node stuff
-  int uid;
-  int port;
-  String hostname;
   GHS ghs;
-
+  
   // neighbor stuff
   private HashMap<Integer, Double> weights  = new HashMap<>();
   private HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
@@ -22,15 +18,17 @@ class Node{
   // used by DC_Project2 for verification before initiating GHS
   boolean serverUp = false;
   public void haltUntilSendersUp(){
-    while(!BooleanCollection.allTrue(senders.values(), Sender.successfullyConnected()))
+    while(!BoolCollection.allTrue(senders.values(), Sender.successfullyConnected()))
       { Wait.threeSeconds(); }
   }
 
   public Node(int u, String hn, int p) {
     uid = u;  port = p;
     hostname = (TestingMode.isOn()) ? "localhost" : hn;
-    serverUp = true;        
-    (new ServerThread(this, port)).start();
+    Node t = this;
+    (new ServerThread(t, port)).start();
+    serverUp = true;
+    ghs = new GHS(this);
   }
 
   public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
@@ -40,23 +38,28 @@ class Node{
   public void connectToSynchronizer(String syncHostname, int syncPort){
     senderToSynchronizer = new Sender(syncHostname, syncPort, uid);
   }
-  public void initGHS(){
-    System.out.println(this.toString());
-    ghs = new GHS(this);
-  }
+  public void initGHS(){  ghs.newSearchPhase(); }
 
   public void sendTo(int rcvrUid, Message newMsg){
-    TestingMode.print(uid + " is sending " + newMsg.toString() + " to " + rcvrUid);
-    try{                            TestingMode.print("\thaving rcvd " + ghs.rcvdFromNbrs()); }
-    catch(NullPointerException e){  TestingMode.print("\thaving rcvd no msgs");               }
     newMsg.sender = uid;
-    if(rcvrUid==-1) senderToSynchronizer.send(newMsg);
-    else            senders.get(rcvrUid).send(newMsg);
+    if(rcvrUid==-1) senderToSynchronizer.loadNewMsg(newMsg);
+    else            senders.get(rcvrUid).loadNewMsg(newMsg);
   }
 
   public String toString(){
-    StringJoiner sb = new StringJoiner(" ");
-    sb.add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port));
-    return sb.toString();
+    return (new StringJoiner(" ")
+            .add("Node ").add(String.valueOf(uid)).add(hostname).add(String.valueOf(port)))
+            .toString();
+  }
+  
+  public synchronized void handleMsg(Message msg){
+    if(ghs!=null) ghs.handleMsg(msg);   //the only time ghs is null is at the start
+  }
+  
+  public void terminate(){
+    senders.values().forEach(sender -> sender.terminate());
+    senderToSynchronizer.terminate();
+    Wait.untilAllTrue(senders.values(), Sender.terminated());
+    terminated = true;
   }
 }

@@ -10,21 +10,30 @@ import java.util.function.Predicate;
 
 public class Sender{
   Message msg;
-  int ownerUID;
+  int ownerUID, rcvrPort;
+  String rcvrHostname;
+  ObjectOutputStream outputStream;
+
   boolean successfullyConnected = false;
   public static Predicate<Sender> successfullyConnected(){ return sender->sender.successfullyConnected; }
+
+  private boolean terminated = false;
+  public static Predicate<Sender> terminated(){ return sender->sender.terminated; }
+  public void terminate(){
+    TestingMode.print(ownerUID + "'s sender to " + rcvrHostname + ":" + rcvrPort + " terminating");
+    terminated=true;
+  }
   
   Sender(String rcvrHostname, int rcvrPort, int senderUID){
-    this.ownerUID = senderUID;
+    this.ownerUID = senderUID;  this.rcvrPort = rcvrPort; this.rcvrHostname = rcvrHostname;
     while(!successfullyConnected) try {
       Socket s = new Socket(rcvrHostname, rcvrPort);
-      ObjectOutputStream outputStream = new ObjectOutputStream(s.getOutputStream());
+      outputStream = new ObjectOutputStream(s.getOutputStream());
       (new Thread() {
         @Override
         public void run() {
-          while(true){
-            try{  if(msg != null) { outputStream.writeObject(msg);  }
-            }catch(IOException e) { e.printStackTrace();            }
+          while(!terminated){
+            send();
             Wait.threeSeconds();
           }
         }
@@ -35,8 +44,19 @@ public class Sender{
     }
   }
   
-  public void send(Message newMsg){
+  public void loadNewMsg(Message newMsg){
     newMsg.sender = ownerUID;
     msg = newMsg;
+    send();
+    TestingMode.print(ownerUID + " sent " + newMsg.toString() + " to " + rcvrPort, ownerUID);
   }
+  private void send(){
+    if(msg != null){
+      TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvrPort, ownerUID);
+      try{  outputStream.writeObject(msg);
+            if(msg.is(TerminateMsg.class))  terminate();
+      }catch(IOException e) { e.printStackTrace(); }
+    }
+  }
+  
 }

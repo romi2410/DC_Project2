@@ -3,7 +3,6 @@ package dc_project2;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map.Entry;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
@@ -12,7 +11,10 @@ public class GHS {
   // rcvd msgs
   private HashMap<Integer, Message> rcvdFromNbr = new HashMap<Integer, Message>();
   public boolean rcvdFromAllNbrs(){
-    return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
+    Printer.print(node.uid + " has rcvd this rnd: " + rcvdFromNbrs());
+    //rcvdFromNbr.entrySet().forEach(e -> System.out.print(e.getKey()+":"+e.getValue()));
+    //return !Arrays.asList(rcvdFromNbr.values()).contains(NullMsg.getInstance());
+    return BoolCollection.allTrue(rcvdFromNbr.values(), Message.isConvergeCast());
   }
   public String rcvdFromNbrs(){
     try{
@@ -34,14 +36,11 @@ public class GHS {
   public GHS(Node node){
     leader = node.uid;
     this.node = node;
-    newSearchPhase();
-    if(TestingMode.isOn()) TestingMode.startPrintThread(this);
   }
 
-  private void newSearchPhase(){
-    TestingMode.print(String.valueOf(node.uid) + " is starting a new phase!");
+  public void newSearchPhase(){
     mwoeMsg = null;
-    for(int uid: rcvdFromNbr.keySet())
+    for(int uid: node.neighbors())
       rcvdFromNbr.put(uid, NullMsg.getInstance());
     broadcast(new SearchMsg(leader, node.uid));
   }
@@ -49,19 +48,18 @@ public class GHS {
     node.neighbors().forEach(nbr -> node.sendTo(nbr, msg));
   }
 
-  public void handleMsg(Object msg){
-    Class msgType = msg.getClass();
-    if(msgType == SearchMsg.class)
+  public synchronized void handleMsg(Message msg){
+    if(msg.is(SearchMsg.class))
       handleSearchMsg((SearchMsg) msg);
-    if(msgType == MWOEMsg.class)    
+    else if(msg.is(MWOEMsg.class))
       handleMWOEMsg((MWOEMsg) msg);
-    if(msgType == RejectMsg.class)    
+    else if(msg.is(RejectMsg.class))
       handleRejectMsg((RejectMsg) msg);
-    if(msgType == NewLeaderMsg.class)
+    else if(msg.is(NewLeaderMsg.class))
       handleNewLeaderMsg((NewLeaderMsg) msg);
-    if(msgType == NewSearchPhaseMsg.class)
+    else if(msg.is(NewSearchPhaseMsg.class))
       handleNewSearchPhaseMsg((NewSearchPhaseMsg) msg);
-    if(msgType == TerminateMsg.class)
+    else if(msg.is(TerminateMsg.class))
       terminate();
   }
 
@@ -78,7 +76,6 @@ public class GHS {
 
   private void handleMWOEMsg(MWOEMsg newMwoeMsg){
     rcvdFromNbr.put(newMwoeMsg.sender, newMwoeMsg);
-    newMwoeMsg.path.add(node.uid);
     mwoeMsg = (mwoeMsg != null) ? MWOEMsg.min(mwoeMsg, newMwoeMsg) : newMwoeMsg;
     if(rcvdFromAllNbrs())
       node.sendTo(parent, mwoeMsg);
@@ -96,21 +93,23 @@ public class GHS {
     node.sendTo(-1, new NewLeaderAckMsg(node.uid));
   }
   private void handleNewSearchPhaseMsg(NewSearchPhaseMsg m){
-    if(this.isLeader()) newSearchPhase();
-    else                TestingMode.print("Unexpected Behavior: non-leader rcvd NewSearchPhaseMsg");
+    assert(this.isLeader());
+    newSearchPhase();
   }
   
   private void terminate(){
+    Printer.print(node.uid + " begin termination");
     String mstNbrs = treeNbrs.stream().map(Object::toString).collect(Collectors.joining("-"+node.uid+", "));
-    System.out.println(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs);
+    node.terminate();
+    Printer.print(node.uid + " terminated;\tNeighbors in MST: " + mstNbrs + " (size is " + treeNbrs.size());
   }
 
   public String toString(){
     StringJoiner sb = new StringJoiner(" ");
     sb.add("GHS Node").add(String.valueOf(node.uid));
-    sb.add("Received following messages this level:");
-    for(Entry<Integer, Message> rcvdMsg: rcvdFromNbr.entrySet())
-      sb.add("\nReceived " + rcvdMsg.getValue().toString() + " from " + rcvdMsg.getKey());
+//    sb.add("Received following messages this level:");
+//    for(Entry<Integer, Message> rcvdMsg: rcvdFromNbr.entrySet())
+//      sb.add("\nReceived " + rcvdMsg.getValue().toString() + " from " + rcvdMsg.getKey());
     return sb.toString();
   }
 }

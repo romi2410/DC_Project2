@@ -1,6 +1,7 @@
 package dc_project2;
 import java.lang.reflect.Field;
 import java.util.StringJoiner;
+import java.util.function.Predicate;
 
 abstract class Message implements java.io.Serializable{
   int sender;
@@ -25,4 +26,6 @@ abstract class Message implements java.io.Serializable{
     }catch(IllegalAccessException e){System.out.println(e);}
     return sj.toString();
   }
+  public static Predicate<Message> isConvergeCast(){ return m -> m.is(MWOEMsg.class) || m.is(RejectMsg.class);  }
+  public boolean is(Class c){ return this.getClass() == c;  }
 }

@@ -1,0 +1,18 @@
+# As per the “shell” convention, anything following a hash sign is
+# a comment and should be ignored by the parser.
+
+# Number of nodes
+3
+# Here we list the individual nodes
+
+# Format is:
+# UID Hostname Port
+1 dc02.utdallas.edu 1231
+2 dc03.utdallas.edu 1232
+3 dc04.utdallas.edu 1233
+
+# List of edges and their weight, one per line. An edge is denoted
+# by (smaller uid, larger uid)
+(1,2) 5
+(2,3) 3
+
