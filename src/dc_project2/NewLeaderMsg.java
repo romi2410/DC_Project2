@@ -5,7 +5,6 @@ import java.util.HashSet;
 class NewLeaderMsg extends Message{
   int level;
   int newLeader;
-  int sender;
   HashSet<Integer> newNbrs;
 
   public NewLeaderMsg(int sender, int newLeader, HashSet<Integer> newNbrs){

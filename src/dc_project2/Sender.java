@@ -10,8 +10,8 @@ import java.util.function.Predicate;
 
 public class Sender{
   Message msg;
-  int ownerUID, rcvrPort;
-  String rcvrHostname;
+  int ownerUID;
+  ClientManager rcvr;
   ObjectOutputStream outputStream;
 
   boolean successfullyConnected = false;
@@ -20,42 +20,35 @@ public class Sender{
   private boolean terminated = false;
   public static Predicate<Sender> terminated(){ return sender->sender.terminated; }
   public void terminate(){
-    TestingMode.print(ownerUID + "'s sender to " + rcvrHostname + ":" + rcvrPort + " terminating");
+    TestingMode.print(ownerUID + "'s sender to " + rcvr.owner.uid + " terminating");
     terminated=true;
   }
   
-  Sender(String rcvrHostname, int rcvrPort, int senderUID){
-    this.ownerUID = senderUID;  this.rcvrPort = rcvrPort; this.rcvrHostname = rcvrHostname;
-    while(!successfullyConnected) try {
-      Socket s = new Socket(rcvrHostname, rcvrPort);
-      outputStream = new ObjectOutputStream(s.getOutputStream());
-      (new Thread() {
-        @Override
-        public void run() {
-          while(!terminated){
-            send();
-            Wait.threeSeconds();
-          }
-        }
-      }).start();
+  Sender(ClientManager rcvr, int senderUID){
+    this.ownerUID = senderUID;  this.rcvr = rcvr;
+//    while(!successfullyConnected)
+//      (new Thread() {
+//        @Override
+//        public void run() {
+//          while(!terminated){
+//            send();
+//            Wait.threeSeconds();
+//          }
+//        }
+//      }).start();
       successfullyConnected = true;
-    } catch (UnknownHostException e){ e.printStackTrace();
-    } catch (IOException e)         { e.printStackTrace();
-    }
   }
   
   public void loadNewMsg(Message newMsg){
     newMsg.sender = ownerUID;
     msg = newMsg;
     send();
-    TestingMode.print(ownerUID + " sent " + newMsg.toString() + " to " + rcvrPort, ownerUID);
   }
   private void send(){
     if(msg != null){
-      TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvrPort, ownerUID);
-      try{  outputStream.writeObject(msg);
-            if(msg.is(TerminateMsg.class))  terminate();
-      }catch(IOException e) { e.printStackTrace(); }
+      TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvr.owner.uid, ownerUID);
+      rcvr.handleMsg(msg);
+      if(msg.is(TerminateMsg.class))  terminate();
     }
   }
   

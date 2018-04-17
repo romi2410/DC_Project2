@@ -11,8 +11,8 @@ public final class Wait{
   public  static void tenSeconds()      { wait(10); }
   public  static void thirtySeconds()   { wait(30); }
   private static void wait(int seconds) {
-//    try                           { Thread.sleep(seconds*1000); } 
-//    catch(InterruptedException e) { System.out.println(e);      }
+    try                           { Thread.sleep(seconds*1000); } 
+    catch(InterruptedException e) { System.out.println(e);      }
   }
   public  static void untilAllTrue(Collection<Boolean> c)     { while(!BoolCollection.allTrue(c)) { Wait.aSec(); }}
   public  static void untilAllTrue(HashMap hm)                { while(!BoolCollection.allTrue(hm.values())){ Wait.aSec(); }}

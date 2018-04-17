@@ -13,7 +13,8 @@ public class Synchronizer extends Process{
   // use for synchronizing GHS start
   boolean serverUp = false;
   boolean sendersUp = false;
-  ServerThread server;
+//  ServerThread server;
+  ClientManager server;
   
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
   HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
@@ -28,8 +29,9 @@ public class Synchronizer extends Process{
       leaders.put(nodeUID, new LeaderToken(nodeUID));
     this.hostname = (TestingMode.isOn()) ? "localhost" : hostname;
     this.port = port;
-    server = new ServerThread(this, port);
-    server.start();
+//    server = new ServerThread(this, port);
+//    server.start();
+    server = new ClientManager(this);
     serverUp = true;
   }
   
@@ -41,10 +43,13 @@ public class Synchronizer extends Process{
   }
   public void handleNewLeaderAckMsg(NewLeaderAckMsg m){ ackedNewLeader.put(m.sender, true); }
   public synchronized void handleMWOEMsg(MWOEMsg m){
+    Printer.print("Synchronizer rcvd " + m.toString());
     if(!leaders.keySet().contains(m.sender)) return;  // don't accept messages from non-mergedLeaders
+    Printer.print("That msg is from a valid leader");
     LeaderToken leader = leaders.get(m.sender);
     leader.handleMWOEMsg(m);
     addNewNbrs(m.externalNode, m.leafnode);
+    Printer.print(leaders.values().toString());
     if(BoolCollection.allTrue(leaders.values(), LeaderToken.rcvdMsg()))
       mergePhase(leaders);
   }
@@ -58,7 +63,8 @@ public class Synchronizer extends Process{
       for(LeaderToken leader: leaders.values())
         sendNewSearchPhaseMsg(leader);
   }
-  private void addNewNbrs(int nodeA, int nodeB){  addNewEdge(nodeA, nodeB); addNewEdge(nodeB, nodeA); }
+  private void addNewNbrs(int nodeA, int nodeB){  addNewEdge(nodeA, nodeB); addNewEdge(nodeB, nodeA); 
+    Printer.print(nodeA + " and " + nodeB + " are now nbrs"); }
   private void addNewEdge(int nodeFrom, int nodeTo){
     if(!newNbrs.containsKey(nodeFrom))
       newNbrs.put(nodeFrom, new HashSet<Integer>());
@@ -81,8 +87,8 @@ public class Synchronizer extends Process{
     senders.get(node).loadNewMsg(newLeaderMsg);
   }
   private void sendNewSearchPhaseMsg(LeaderToken leader){
-    senders.get(leader).loadNewMsg(new NewSearchPhaseMsg(-1));
     leader.resetRcvdMsg();
+    senders.get(leader.uid).loadNewMsg(new NewSearchPhaseMsg(-1));
   }
   
   private void terminate(){
@@ -96,7 +102,7 @@ public class Synchronizer extends Process{
   
   public void connectToNodes(Set<Node> nodes){
     for(Node node: nodes)
-      senders.put(node.uid, new Sender(node.hostname, node.port, uid));
+      senders.put(node.uid, new Sender(node.server, uid));
     while(!BoolCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.threeSeconds();}
     sendersUp = true;
   }
@@ -121,7 +127,7 @@ class LeaderToken{
   int uid, wantsToMergeWith=0;
   HashSet<Integer> component = new HashSet<Integer>();
   MWOEMsg mwoe;
-  boolean rcvdMsg = false;
+  private boolean rcvdMsg = false;
   public static Predicate<LeaderToken> rcvdMsg(){ return leader->leader.rcvdMsg; }
   
   public LeaderToken(int uid){  this.uid = uid;   component.add(uid); }
@@ -134,7 +140,7 @@ class LeaderToken{
     mwoe = m;
     rcvdMsg = true;
   }
-  public void    resetRcvdMsg()                      { rcvdMsg = false;                     }
+  public void    resetRcvdMsg()                      { rcvdMsg = false; Printer.print(uid + " had its rcvdMsg reset in Synchronizer");}
   public boolean wantsToMergeWith(LeaderToken leader){ return wantsToMergeWith==leader.uid; }
   public void    absorb(LeaderToken food)            { component.addAll(food.component);    }
   @Override
@@ -145,10 +151,8 @@ class LeaderToken{
       sj.add(String.valueOf(node));
     sj.add(">\t");
     
-    if(rcvdMsg){
+    if(rcvdMsg)
       sj.add(" and wants to merge with").add(String.valueOf(wantsToMergeWith));
-      sj.add("\t\tits MWOEMsg is\t").add(mwoe.toString());
-    }
     else
       sj.add(" and has not send a MWOEMsg yet this level");
     return sj.toString();
@@ -180,6 +184,8 @@ class MergePhase{
       LeaderToken leaderB = leadersToMerge.get(leaderA.wantsToMergeWith);
       if(leaderB.wantsToMergeWith(leaderA))
         merge(leaderA, leaderB, leadersToMerge);
+      else
+        Printer.print(leaderA.uid + " wants to merge with " + leaderB.uid + ", but " + leaderB.uid + " wants to merge with " + leaderB.wantsToMergeWith);
     }
   }
   private void merge(LeaderToken leaderA, LeaderToken leaderB,
