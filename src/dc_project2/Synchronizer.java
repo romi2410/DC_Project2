@@ -14,6 +14,7 @@ public class Synchronizer extends Process{
   boolean serverUp = false;
   boolean sendersUp = false;
 //  ServerThread server;
+  ClientManager server;
   
   HashMap<Integer, LeaderToken> leaders  = new HashMap<Integer, LeaderToken>();
   HashMap<Integer, Sender> senders = new HashMap<Integer, Sender>();
@@ -30,6 +31,7 @@ public class Synchronizer extends Process{
     this.port = port;
 //    server = new ServerThread(this, port);
 //    server.start();
+    server = new ClientManager(this);
     serverUp = true;
   }
   
@@ -96,7 +98,7 @@ public class Synchronizer extends Process{
   
   public void connectToNodes(Set<Node> nodes){
     for(Node node: nodes)
-      senders.put(node.uid, new Sender(node, uid));
+      senders.put(node.uid, new Sender(node.server, uid));
     while(!BoolCollection.allTrue(senders.values(), Sender.successfullyConnected())){Wait.threeSeconds();}
     sendersUp = true;
   }

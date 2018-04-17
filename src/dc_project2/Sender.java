@@ -11,7 +11,7 @@ import java.util.function.Predicate;
 public class Sender{
   Message msg;
   int ownerUID;
-  Process rcvr;
+  ClientManager rcvr;
   ObjectOutputStream outputStream;
 
   boolean successfullyConnected = false;
@@ -20,11 +20,11 @@ public class Sender{
   private boolean terminated = false;
   public static Predicate<Sender> terminated(){ return sender->sender.terminated; }
   public void terminate(){
-    TestingMode.print(ownerUID + "'s sender to " + rcvr.uid + " terminating");
+    TestingMode.print(ownerUID + "'s sender to " + rcvr.owner.uid + " terminating");
     terminated=true;
   }
   
-  Sender(Process rcvr, int senderUID){
+  Sender(ClientManager rcvr, int senderUID){
     this.ownerUID = senderUID;  this.rcvr = rcvr;
     while(!successfullyConnected)
       (new Thread() {
@@ -43,11 +43,11 @@ public class Sender{
     newMsg.sender = ownerUID;
     msg = newMsg;
     send();
-    TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvr.uid, ownerUID);
+    TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvr.owner.uid, ownerUID);
   }
   private void send(){
     if(msg != null){
-      TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvr.uid, ownerUID);
+      TestingMode.print(ownerUID + " sent " + msg.toString() + " to " + rcvr.owner.uid, ownerUID);
       rcvr.handleMsg(msg);
       if(msg.is(TerminateMsg.class))  terminate();
     }

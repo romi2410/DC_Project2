@@ -14,6 +14,7 @@ class Node extends Process{
   public  Set<Integer>             neighbors()        { return senders.keySet();  }
   public  double                   getWeight(int nbr) { return weights.get(nbr);  }
   private Sender                   senderToSynchronizer;
+  public ClientManager             server;
 
   // used by DC_Project2 for verification before initiating GHS
   boolean serverUp = false;
@@ -26,17 +27,18 @@ class Node extends Process{
     uid = u;  port = p;
     hostname = (TestingMode.isOn()) ? "localhost" : hn;
     Node t = this;
-//    (new ServerThread(t, port)).start();
+    //(new ServerThread(t, port)).start();
+    server = new ClientManager(this);
     serverUp = true;
     ghs = new GHS(this);
   }
 
   public void connectTo(Node nbr, double w){
-    senders.put(nbr.uid, new Sender(nbr, uid));
+    senders.put(nbr.uid, new Sender(nbr.server, uid));
     weights.put(nbr.uid, w);
   }
   public void connectToSynchronizer(Synchronizer sync){
-    senderToSynchronizer = new Sender(sync, uid);
+    senderToSynchronizer = new Sender(sync.server, uid);
   }
   public void initGHS(){  ghs.newSearchPhase(); }
 
