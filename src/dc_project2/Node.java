@@ -26,17 +26,17 @@ class Node extends Process{
     uid = u;  port = p;
     hostname = (TestingMode.isOn()) ? "localhost" : hn;
     Node t = this;
-    (new ServerThread(t, port)).start();
+//    (new ServerThread(t, port)).start();
     serverUp = true;
     ghs = new GHS(this);
   }
 
-  public void connectTo(String nbrhostname, int nbrport, int nbrUID, double w){
-    senders.put(nbrUID, new Sender(nbrhostname, nbrport, uid));
-    weights.put(nbrUID, w);
+  public void connectTo(Node nbr, double w){
+    senders.put(nbr.uid, new Sender(nbr, uid));
+    weights.put(nbr.uid, w);
   }
-  public void connectToSynchronizer(String syncHostname, int syncPort){
-    senderToSynchronizer = new Sender(syncHostname, syncPort, uid);
+  public void connectToSynchronizer(Synchronizer sync){
+    senderToSynchronizer = new Sender(sync, uid);
   }
   public void initGHS(){  ghs.newSearchPhase(); }
 

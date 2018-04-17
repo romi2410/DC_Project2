@@ -43,7 +43,7 @@ public class DC_Project2 {
     initEdges(nodes);
     synchronizer.connectToNodes(new HashSet<Node>(nodes.values()));
     for(Node node: nodes.values())
-        node.connectToSynchronizer(synchronizer.hostname, synchronizer.port);
+        node.connectToSynchronizer(synchronizer);
     haltUntilSendersStarted(nodes, synchronizer);
   }
   
@@ -97,8 +97,8 @@ public class DC_Project2 {
             String[] tuple = params[0].substring(1, params[0].length()-1).split(",");
             Node node1 = nodes.get(Integer.parseInt(tuple[0]));
             Node node2 = nodes.get(Integer.parseInt(tuple[1]));
-            node1.connectTo(node2.hostname, node2.port, node2.uid, w);
-            node2.connectTo(node1.hostname, node1.port, node1.uid, w);
+            node1.connectTo(node2, w);
+            node2.connectTo(node1, w);
           }
         }
     }
